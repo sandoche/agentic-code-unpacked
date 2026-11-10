@@ -1,0 +1,25 @@
+{
+  "name": "website",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "npm run lint && npm run typecheck && npm run format:check",
+    "lint": "oxlint --deny-warnings",
+    "typecheck": "astro check",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check"
+  },
+  "dependencies": {
+    "astro": "^7.4.8"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "@astrojs/compiler-rs": "^0.5.3",
+    "oxfmt": "^0.78.0",
+    "oxlint": "^1.93.0",
+    "typescript": "^6.0.0"
+  }
+}

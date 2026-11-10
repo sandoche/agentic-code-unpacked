@@ -1,0 +1,11 @@
+[global]
+disable = ["MD013"]
+
+[MD003]
+style = "atx"
+
+[MD004]
+style = "dash"
+
+[MD046]
+style = "fenced"
