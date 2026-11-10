@@ -1,0 +1,6 @@
+packages:
+  - website
+
+allowBuilds:
+  fsevents: true
+  lefthook: true

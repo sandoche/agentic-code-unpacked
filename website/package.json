@@ -6,7 +6,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "check": "npm run lint && npm run typecheck && npm run format:check",
+    "check": "pnpm run lint && pnpm run typecheck && pnpm run format:check",
     "lint": "oxlint --deny-warnings",
     "typecheck": "astro check",
     "format": "oxfmt",

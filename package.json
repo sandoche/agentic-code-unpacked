@@ -1,14 +1,12 @@
 {
   "name": "agentic-code-unpacked",
   "private": true,
+  "packageManager": "pnpm@12.18.0",
   "engines": {
     "node": ">=22.23.4"
   },
-  "workspaces": [
-    "website"
-  ],
   "scripts": {
-    "check": "npm run check --workspace website && npm run lint:skills",
+    "check": "pnpm --filter website run check && pnpm run lint:skills",
     "lint:skills": "rumdl check skills"
   },
   "devDependencies": {
