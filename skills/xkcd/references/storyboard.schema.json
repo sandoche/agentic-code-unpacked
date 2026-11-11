@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Code Unpacked comic storyboard",
+  "type": "object",
+  "required": ["schemaVersion", "title", "concept", "evidence", "characters", "strips"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "title": {"$ref": "#/$defs/text"},
+    "concept": {"$ref": "#/$defs/text"},
+    "evidence": {"$ref": "#/$defs/evidence"},
+    "characters": {"type": "array", "minItems": 1, "items": {"type": "object", "required": ["id", "name", "role", "evidence"], "properties": {"id": {"$ref": "#/$defs/id"}, "name": {"$ref": "#/$defs/text"}, "role": {"$ref": "#/$defs/text"}, "evidence": {"$ref": "#/$defs/evidence"}}}},
+    "strips": {"type": "array", "minItems": 1, "maxItems": 12, "items": {"type": "object", "required": ["id", "title", "panels", "limitation"], "properties": {
+      "id": {"$ref": "#/$defs/id"}, "title": {"$ref": "#/$defs/text"}, "limitation": {"$ref": "#/$defs/text"},
+      "panels": {"type": "array", "minItems": 2, "maxItems": 6, "items": {"type": "object", "required": ["id", "scene", "evidence"], "anyOf": [{"required": ["caption"], "properties": {"caption": {"$ref": "#/$defs/text"}}}, {"required": ["dialogue"], "properties": {"dialogue": {"minItems": 1}}}], "properties": {
+        "id": {"$ref": "#/$defs/id"}, "scene": {"$ref": "#/$defs/text"}, "caption": {"type": "string"}, "evidence": {"$ref": "#/$defs/evidence"},
+        "dialogue": {"type": "array", "items": {"type": "object", "required": ["characterId", "text"], "properties": {"characterId": {"$ref": "#/$defs/id"}, "text": {"$ref": "#/$defs/text"}}}}
+      }}}
+    }}}
+  },
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_-]*$"},
+    "text": {"type": "string", "minLength": 1, "pattern": "\\S"},
+    "evidence": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+  }
+}
