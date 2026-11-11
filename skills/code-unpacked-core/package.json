@@ -1,0 +1,10 @@
+{
+  "name": "code-unpacked-core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "mermaid": "11.17.2",
+    "playwright": "1.65.0"
+  }
+}

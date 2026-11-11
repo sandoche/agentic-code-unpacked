@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review Quiz"
+  short_description: "Check code understanding with an offline quiz"
+  default_prompt: "Use $review-quiz to create a source-backed comprehension quiz for this code."
