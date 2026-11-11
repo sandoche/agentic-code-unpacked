@@ -1,0 +1,7 @@
+interface:
+  display_name: "Reverse Design"
+  short_description: "Reconstruct source-backed design documents"
+  default_prompt: "Use $reverse-design to explain this code through relevant requirements, architecture, and design documents."
+
+policy:
+  allow_implicit_invocation: true

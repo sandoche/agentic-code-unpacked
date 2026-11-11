@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Code Unpacked reverse-design content v1",
+  "type": "object",
+  "required": ["schemaVersion", "title", "summary", "summaryEvidence", "coverage", "documents"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "title": { "$ref": "#/$defs/text" },
+    "summary": { "$ref": "#/$defs/text" },
+    "summaryEvidence": { "$ref": "#/$defs/evidence" },
+    "coverage": {
+      "type": "array", "minItems": 11, "maxItems": 11,
+      "items": {
+        "type": "object", "required": ["family", "status", "reason", "evidence"],
+        "properties": {
+          "family": { "$ref": "#/$defs/family" },
+          "status": { "enum": ["generated", "not-applicable", "insufficient-evidence"] },
+          "reason": { "$ref": "#/$defs/text" },
+          "evidence": { "type": "array", "items": { "$ref": "#/$defs/text" } }
+        }
+      }
+    },
+    "documents": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "required": ["id", "title", "family", "sections"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "title": { "$ref": "#/$defs/text" },
+          "family": { "$ref": "#/$defs/family" },
+          "sections": {
+            "type": "array", "minItems": 1,
+            "items": {
+              "type": "object", "required": ["heading", "markdown", "basis", "evidence"],
+              "properties": {
+                "heading": { "$ref": "#/$defs/text" },
+                "markdown": { "$ref": "#/$defs/text" },
+                "basis": { "enum": ["observed", "inferred", "proposed"] },
+                "evidence": { "$ref": "#/$defs/evidence" }
+              }
+            }
+          },
+          "diagrams": {
+            "type": "array",
+            "items": {
+              "type": "object", "required": ["id", "title", "mermaid", "evidence"],
+              "properties": {
+                "id": { "$ref": "#/$defs/id" },
+                "title": { "$ref": "#/$defs/text" },
+                "mermaid": { "$ref": "#/$defs/text" },
+                "evidence": { "$ref": "#/$defs/evidence" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "gaps": {
+      "type": "array",
+      "items": {
+        "type": "object", "required": ["question", "affectedDocuments", "evidence"],
+        "properties": {
+          "question": { "$ref": "#/$defs/text" },
+          "affectedDocuments": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+          "evidence": { "type": "array", "items": { "$ref": "#/$defs/text" } }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "text": { "type": "string", "minLength": 1 },
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,79}$" },
+    "evidence": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/text" } },
+    "family": { "enum": ["requirements", "stories", "user-flows", "c4", "data-model", "sequences", "state-machines", "api-contracts", "deployment", "threat-model", "decisions"] }
+  }
+}
