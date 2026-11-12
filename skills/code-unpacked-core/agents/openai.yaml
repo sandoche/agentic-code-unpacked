@@ -1,4 +1,0 @@
-interface:
-  display_name: "Code Unpacked Core"
-  short_description: "Shared evidence and artifacts for code explanations"
-  default_prompt: "Use $code-unpacked-core to capture source evidence for a Code Unpacked artifact."

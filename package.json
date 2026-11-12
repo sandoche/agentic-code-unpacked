@@ -7,7 +7,9 @@
     "node": ">=22.23.4"
   },
   "scripts": {
-    "check": "pnpm --filter website run check && pnpm run lint:skills && pnpm test",
+    "check": "pnpm run skills:check && pnpm --filter website run check && pnpm run lint:skills && pnpm test",
+    "skills:build": "node scripts/build-skills.mjs",
+    "skills:check": "node scripts/build-skills.mjs --check",
     "lint:skills": "rumdl check skills",
     "test": "node scripts/test.mjs",
     "install:skills": "node scripts/install.mjs"

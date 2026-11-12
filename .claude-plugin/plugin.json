@@ -1,0 +1,8 @@
+{
+  "name": "code-unpacked",
+  "description": "Understand code through walkthroughs, architecture docs, interactive maps, quizzes, and comics.",
+  "version": "0.2.0",
+  "author": { "name": "Sandoche" },
+  "homepage": "https://codeunpacked.san.cx/",
+  "repository": "https://github.com/sandoche/agentic-code-unpacked"
+}

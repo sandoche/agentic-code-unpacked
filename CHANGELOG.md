@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Added independent skill bundles, automatic first-use setup, and shared dependency caching.
+- Added cross-harness installation, hosted skill discovery, and a native Claude plugin.
+- Simplified the README and documented direct skill usage with linked technical references.
+
 ## 0.2.0 — 2026-11-12
 
 - Added shared review analysis, changed-file coverage, pinned contextual source, conservative JS/TS/JSX and PHP structure, and offline syntax highlighting.

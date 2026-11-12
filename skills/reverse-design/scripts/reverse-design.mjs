@@ -4,7 +4,7 @@ import { pathToFileURL } from 'node:url';
 import {
   escapeHtml, parseArgs, outputDirectory, validateContext, resolveEvidence,
   assertEvidence, readJson, writeJson, renderShell, finishArtifact, renderMermaid, loadBrowser,
-} from '../../code-unpacked-core/scripts/core.mjs';
+} from '../runtime/scripts/core.mjs';
 
 export const FAMILIES = Object.freeze([
   'requirements', 'stories', 'user-flows', 'c4', 'data-model', 'sequences',

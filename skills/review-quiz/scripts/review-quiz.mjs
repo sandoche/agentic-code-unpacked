@@ -5,7 +5,7 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import {
   escapeHtml, parseArgs, outputDirectory, validateContext, assertEvidence,
   resolveEvidence, citationHtml, readJson, writeJson, renderShell, finishArtifact,
-} from '../../code-unpacked-core/scripts/core.mjs';
+} from '../runtime/scripts/core.mjs';
 export { gradeQuiz } from '../assets/quiz-runtime.mjs';
 
 const TOPICS = new Set(['behavior', 'flow', 'interfaces', 'failures', 'tests', 'limitations', 'security', 'extension']);

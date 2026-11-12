@@ -1,6 +1,6 @@
 packages:
   - website
-  - skills/code-unpacked-core
+  - packages/core
 
 allowBuilds:
   fsevents: true

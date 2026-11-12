@@ -14,7 +14,7 @@ import {
   renderShell,
   finishArtifact,
   loadBrowser,
-} from "../../code-unpacked-core/scripts/core.mjs";
+} from "../runtime/scripts/core.mjs";
 
 const nonempty = (value, label) => {
   if (typeof value !== "string" || !value.trim()) throw Error(`${label} must be a nonempty string`);

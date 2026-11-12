@@ -1,0 +1,11 @@
+{
+  "name": "code-unpacked",
+  "owner": { "name": "Sandoche" },
+  "plugins": [
+    {
+      "name": "code-unpacked",
+      "source": "./",
+      "description": "Five independent skills for understanding and reviewing code."
+    }
+  ]
+}

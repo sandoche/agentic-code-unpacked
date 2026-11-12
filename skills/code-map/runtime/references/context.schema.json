@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Code Unpacked context v1/v2",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "target",
+    "source",
+    "files",
+    "evidence",
+    "limitations"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "enum": [
+        1,
+        2
+      ]
+    },
+    "target": {
+      "type": "object",
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "pr",
+            "branch",
+            "codebase",
+            "docs"
+          ]
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "head"
+      ]
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "path",
+          "status",
+          "hunks"
+        ]
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "fileId",
+          "startLine",
+          "endLine",
+          "side"
+        ],
+        "properties": {
+          "startLine": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "endLine": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "side": {
+            "enum": [
+              "head",
+              "base"
+            ]
+          }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "relationships": {
+      "type": "array"
+    },
+    "symbols": {
+      "type": "array"
+    },
+    "unresolved": {
+      "type": "array"
+    },
+    "analysis": {
+      "type": "object"
+    }
+  }
+}

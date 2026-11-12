@@ -1,0 +1,11 @@
+# Shared review analysis
+
+After collection, inspect the source and available graph with coverage checks. The collector extracts conservative JS/TS/JSX and PHP structure; dynamic/external calls remain in context.unresolved. Direct imports are expanded for PRs/branches. Add relevant unchanged callers, guards, route bindings, and tests via collect --context-files path1,path2 at the same pinned revision.
+
+Author analysis.json, then run code-unpacked.mjs analyze --context FILE --content analysis.json. This validates and embeds analysis in context.json and saves analysis.json beside it. Each skill can do this independently and reuse an existing analysis. Never use an example fixture as a general summarizer.
+
+Analysis v2: schemaVersion:2, title, summary, evidenceIds, topics, flows, fileCoverage, limitations. Each topic: id, title, summary, evidenceIds, reviewFocus:[{text,evidenceIds}], extensionPoints:[{text,evidenceIds,basis?}]. Optional priority (high/medium/low), before, after, invariants and test notes. Extension advice is proposed; distinguish it from observed behavior. Each flow: id, title, evidenceIds, steps:[{text,evidenceIds,symbolIds?}]. Every changed file needs one fileCoverage entry: fileId, role (substantive/supporting/omitted), topicIds, reason. Substantive entries must reference topics. Include omissions and supporting changes rather than padding narration.
+
+Context v2 adds symbols [{id,fileId,name,kind,startLine,endLine,evidenceIds}], source-backed relationships [{id,fromFileId,toFileId,fromSymbolId?,toSymbolId?,kind,label,evidenceIds,provenance}], unresolved calls, and optional analysis. Contextual files have role/status context; they are never changed files. Stable IDs are source-derived; source links pin head/base. Graph edges may be added only after verifying endpoints and source at the captured revision; record provenance and coverage limitations.
+
+Start every presentation with purpose, behavior changes, review order, and where to extend. Use topic IDs as anchors where possible. Keep evidence and coverage available progressively. JSON is authored teaching content; scripts own extraction, validation, highlighting, scoring, layout, timing, and packaging.

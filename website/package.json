@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "astro build && node ../scripts/publish-skills.mjs",
     "preview": "astro preview",
     "check": "pnpm run lint && pnpm run typecheck && pnpm run format:check",
     "lint": "oxlint --deny-warnings",

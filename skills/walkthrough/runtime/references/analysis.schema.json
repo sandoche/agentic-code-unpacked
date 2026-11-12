@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Code Unpacked review analysis v2",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "title",
+    "summary",
+    "evidenceIds",
+    "topics",
+    "flows",
+    "fileCoverage",
+    "limitations"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 2
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidenceIds": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "topics": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "summary",
+          "evidenceIds",
+          "reviewFocus",
+          "extensionPoints"
+        ]
+      }
+    },
+    "flows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "steps",
+          "evidenceIds"
+        ]
+      }
+    },
+    "fileCoverage": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "fileId",
+          "role",
+          "topicIds",
+          "reason"
+        ],
+        "properties": {
+          "role": {
+            "enum": [
+              "substantive",
+              "supporting",
+              "omitted"
+            ]
+          }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

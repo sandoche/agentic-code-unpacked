@@ -4,8 +4,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   escapeHtml, parseArgs, outputDirectory, validateContext, assertEvidence, resolveEvidence,
   citationHtml, readJson, writeJson, renderShell, finishArtifact, loadBrowser, run,
-} from '../../code-unpacked-core/scripts/core.mjs';
-import { highlightCode, highlightCss } from '../../code-unpacked-core/scripts/highlight.mjs';
+} from '../runtime/scripts/core.mjs';
+import { highlightCode, highlightCss } from '../runtime/scripts/highlight.mjs';
 
 const assets = new URL('../assets/', import.meta.url);
 const requiredText = (value, label) => { if (typeof value !== 'string' || !value.trim()) throw Error(`${label} must be nonempty text`); };

@@ -4,9 +4,9 @@ import { pathToFileURL } from 'node:url';
 import {
   VERSION, validateContext, assertEvidence, resolveEvidence, escapeHtml,
   renderShell, readJson, writeJson, finishArtifact, outputDirectory, parseArgs,
-} from '../../code-unpacked-core/scripts/core.mjs';
-import { validateAnalysis } from '../../code-unpacked-core/scripts/analysis.mjs';
-import { highlightCode, highlightCss } from '../../code-unpacked-core/scripts/highlight.mjs';
+} from '../runtime/scripts/core.mjs';
+import { validateAnalysis } from '../runtime/scripts/analysis.mjs';
+import { highlightCode, highlightCss } from '../runtime/scripts/highlight.mjs';
 
 const asset = name => new URL(`../assets/${name}`, import.meta.url);
 const compare = (a, b) => a < b ? -1 : a > b ? 1 : 0;

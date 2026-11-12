@@ -173,7 +173,7 @@ importers:
         specifier: ^0.3.2
         version: 0.3.2
 
-  skills/code-unpacked-core:
+  packages/core:
     dependencies:
       mermaid:
         specifier: 11.17.2
