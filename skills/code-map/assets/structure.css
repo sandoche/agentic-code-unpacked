@@ -1,0 +1,35 @@
+.toolbar select { max-width:230px; background:#0b1019; color:var(--ink); border:1px solid #52627c; border-radius:6px; padding:6px; font-size:12px }
+.teaching-filters { border-top:1px solid #28374e; padding-top:8px; padding-bottom:8px; font-size:12px }
+.filter-help { font-size:11px; max-width:400px }
+.context-card { border-style:dashed; background:#19212d; opacity:.82 }
+.status.context { color:#b3bdcb; border-style:dashed }
+.context-file small { color:#b3bdcb }
+.edge.kind-calls { stroke:#83d4ba }
+.edge.kind-imports { stroke:#7397b6; stroke-dasharray:6 5 }
+.edge.kind-constructs { stroke:#c4a5ff }
+.edge.kind-routes,.edge.kind-route { stroke:#efbf7f; stroke-width:3 }
+.edge.kind-tests,.edge.kind-test { stroke:#e39bbb; stroke-dasharray:3 4 }
+.edge.edge-muted { opacity:.18 }
+#detail .symbol-list { margin-top:18px; margin-bottom:18px }
+#detail .symbol-buttons { max-height:132px; overflow:auto }
+#detail .primary-source { margin:8px 0 }
+#detail .source-evidence { margin:12px 0; font-size:12px; color:var(--muted) }
+#detail .source-evidence .sources { max-height:240px; overflow:auto; margin-top:8px }
+#detail .relationship-controls { display:flex; flex-wrap:wrap; gap:5px; margin:10px 0 15px }
+#detail .relationship-controls button { font-size:11px; padding:4px 7px }
+#detail .symbol-link,#detail .file-link { display:inline-block; margin:3px 4px 3px 0; max-width:100%; overflow-wrap:anywhere; font-size:12px; padding:5px 8px; text-align:left }
+#detail .back-file { font-size:11px; padding:4px 7px; max-width:100%; overflow-wrap:anywhere }
+#detail .relationship-section { border-top:1px solid #34455f; margin-top:20px }
+#detail .relationship-item { border-left:2px solid #52627c; padding:4px 0 8px 9px; margin:10px 0 }
+#detail .relationship-item p { margin:5px 0; font-size:12px }
+#detail .provenance { display:block; color:#afc5d9; font-size:10px; margin-bottom:6px; overflow-wrap:anywhere }
+#detail .review-topic { border-bottom:1px solid #34455f; padding:12px 0 18px }
+#detail .review-topic p,#detail .teaching-claim p,#detail .flow-steps p { font-size:13px }
+#detail .topic-link { text-align:left; font-weight:600; padding:5px 9px }
+#detail .teaching-claim { border-left:2px solid #83d4ba; padding-left:9px; margin:9px 0 }
+#detail .flow-steps { padding-left:22px }
+#detail .flow-steps li { margin:15px 0 }
+#detail .unresolved { border-top:1px solid #5f533e; padding-top:14px; margin-top:22px; font-size:12px }
+#detail .unresolved p { overflow-wrap:anywhere }
+#detail .source-code .line.focus { border-left-width:2px }
+@media(max-width:760px) { .toolbar select { max-width:180px } .filter-help { max-width:none } }

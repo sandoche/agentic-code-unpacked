@@ -1,4 +1,4 @@
 interface:
   display_name: "Code Map"
-  short_description: "Explore code and PR diffs on an offline canvas"
-  default_prompt: "Use $code-map to create an explorable canvas for this pull request or selected code."
+  short_description: "Explore files, functions, and typed code relationships"
+  default_prompt: "Use $code-map to explain this code through file and function exploration, callers, callees, and review topics."

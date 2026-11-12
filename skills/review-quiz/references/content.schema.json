@@ -1,12 +1,15 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Review quiz content",
+  "title": "Review quiz content v1/v2",
   "type": "object",
   "required": ["schemaVersion", "title", "questions"],
   "properties": {
-    "schemaVersion": { "const": 1 },
+    "schemaVersion": { "enum": [1, 2] },
     "title": { "type": "string", "minLength": 1 },
     "summary": { "type": "string" },
+    "requestedCount": { "type": "integer", "minimum": 1, "default": 8 },
+    "generatedCount": { "type": "integer", "minimum": 1 },
+    "insufficientEvidence": { "type": "string", "minLength": 1 },
     "limitations": { "type": "array", "items": { "type": "string", "minLength": 1 } },
     "questions": {
       "type": "array", "minItems": 1,
@@ -16,7 +19,7 @@
         "properties": {
           "id": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$" },
           "prompt": { "type": "string", "minLength": 1 },
-          "topic": { "enum": ["behavior", "flow", "interfaces", "failures", "tests", "limitations", "security"] },
+          "topic": { "enum": ["behavior", "flow", "interfaces", "failures", "tests", "limitations", "security", "extension"] },
           "options": {
             "type": "array", "minItems": 3, "maxItems": 4,
             "items": {

@@ -1,5 +1,6 @@
 const steps = [...document.querySelectorAll('.step')];
 const chapters = [...document.querySelectorAll('[data-chapter]')];
+const chapterStarts = [...document.querySelectorAll('[data-chapter-start]')];
 const previous = document.querySelector('#previous');
 const next = document.querySelector('#next');
 const play = document.querySelector('#play');
@@ -8,7 +9,10 @@ let active = 0;
 let playing = false;
 let timer;
 const isVideo = new URLSearchParams(location.search).get('video') === '1';
-if (isVideo) document.documentElement.dataset.video = 'true';
+if (isVideo) {
+  document.documentElement.dataset.video = 'true';
+  document.querySelectorAll('.step-evidence').forEach(details => { details.open = true; });
+}
 function pause() {
   playing = false;
   clearTimeout(timer);
@@ -31,13 +35,17 @@ function showStep(index) {
     if (i === active) chapter.setAttribute('aria-current', 'step');
     else chapter.removeAttribute('aria-current');
   });
+  chapterStarts.forEach(button => {
+    const start = Number(button.dataset.chapterStart);
+    button.setAttribute('aria-pressed', String(steps[start].dataset.chapterId === steps[active].dataset.chapterId));
+  });
   previous.disabled = active === 0;
   next.disabled = active === steps.length - 1;
   position.textContent = `${active + 1} / ${steps.length}`;
   document.querySelector('.progress-fill').style.width = `${(active + 1) / steps.length * 100}%`;
   const step = steps[active];
   const boundary = step.getBoundingClientRect();
-  const overflow = step.scrollHeight > step.clientHeight + 2 || [...step.querySelectorAll('h2,.explanation,pre,.sources')].some(element => element.getBoundingClientRect().bottom > boundary.bottom + 2);
+  const overflow = step.scrollHeight > step.clientHeight + 2 || [...step.querySelectorAll('h2,.explanation,pre,.sources')].some(element => element.getBoundingClientRect().bottom > boundary.bottom + 2 || element.scrollWidth > element.clientWidth + 2);
   if (playing) schedule();
   return { id: step.dataset.id, index: active, overflow };
 }
@@ -45,6 +53,7 @@ function move(index) { pause(); showStep(index); }
 previous.addEventListener('click', () => move(active - 1));
 next.addEventListener('click', () => move(active + 1));
 chapters.forEach((chapter, i) => chapter.addEventListener('click', () => move(i)));
+chapterStarts.forEach(button => button.addEventListener('click', () => move(Number(button.dataset.chapterStart))));
 play.addEventListener('click', () => {
   if (playing) { pause(); return; }
   if (active === steps.length - 1) showStep(0);

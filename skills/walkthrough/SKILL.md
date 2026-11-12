@@ -2,14 +2,15 @@
 name: walkthrough
 description: Create a source-linked HTML code walkthrough for a PR, branch, codebase, or selected files; use video mode to export the same explanation as a silent MP4 with captions.
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
 ---
 
 # Walkthrough
 
-Produce a small offline HTML presentation: one title and explanation per step,
-with optional source code and citations. Focus the narrative on the requested
-code, its behavior, and its limits. Explanations without code blocks are valid.
+Produce an offline HTML presentation that starts with purpose, behavior changes,
+review order, and extension guidance. Follow the overview with deep-dive chapters
+that explain the requested code and its limits. Each step has a title and
+explanation; explanation-only steps are valid.
 
 ## Target and evidence
 
@@ -23,14 +24,41 @@ Follow repository graph-discovery instructions when graph tools are available;
 use direct source for coverage gaps. Never treat an inferred intent as a proven
 requirement or invent a source reference.
 
+Use the core's [shared review analysis](../code-unpacked-core/references/analysis.md)
+to establish topics, before/after behavior, review focus, extension points, and
+file coverage. Reuse existing analysis at the same source revision. Read callers,
+guards, and tests needed to explain the flow; request pinned context files through
+the core collector instead of inferring their behavior. Classify supporting and
+omitted changes in the analysis rather than padding the narrative.
+
 ## Author and render
 
-Write content JSON using [the content schema](references/content.schema.json):
-`schemaVersion: 1`, `title`, optional `summary`, and ordered `steps`. Every step
-has `id`, `title`, plain-text `explanation`, and nonempty `evidence` IDs from the
-captured context. Optional `codeEvidence` chooses a captured snippet; code is
-read from source rather than copied into content. Prefer a short narrative with
-enough steps to explain the behavior, tradeoffs, and relevant limits.
+Write schema 2 content using [the content schema](references/content.schema.json):
+`schemaVersion: 2`, `title`, optional `summary`, and ordered `chapters`. Each
+chapter has `id`, `title`, optional `topicIds` from shared analysis, and `steps`.
+Every step has `id`, `title`, plain-text `explanation`, and nonempty `evidence`
+IDs. Step IDs must be globally unique; IDs beginning `__overview` are reserved.
+
+The renderer prepends an Overview chapter from `context.analysis`. It covers the
+purpose, supplied before/after behavior, suggested review order, and extension
+guidance. Recommendations remain labeled as proposals. An explicit `overview`
+can replace this content: `purpose`, `evidence`, optional `before`/`after`,
+`reviewOrder`, and `extensionPoints`. Guidance items use `title`, `explanation`,
+and `evidence`; extension items may mark `basis` as `proposed` or `observed`.
+If no before/after behavior is supplied, the renderer does not invent a change.
+
+Use `snippets` for one or more pieces of source in a step. Each snippet has an
+`evidence` ID and optional `label`, `side` (`before`, `after`, or `context`), and
+`focusLines` with absolute source line numbers. Before snippets must reference
+base evidence and after snippets head evidence. Focus lines must stay within the
+captured range. Code is syntax-highlighted with line numbers and is read from
+source rather than copied into authored JSON. Narrow each snippet to the lines
+needed to explain the step. Compare before and after snippets when that clarifies
+the behavior; do not require code on every step.
+
+Schema 1 flat `steps` and single `codeEvidence` inputs remain supported. New
+walkthroughs use schema 2 so reviewers can start with an overview and choose a
+deep dive. Evidence and file coverage remain available in collapsed panels.
 
 Run the deterministic renderer from the installed skill location:
 

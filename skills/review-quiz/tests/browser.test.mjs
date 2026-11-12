@@ -13,6 +13,9 @@ test('offline quiz supports keyboard answers, score, recommendations, resubmit, 
   let browser;
   try {
     const quiz = quizFixture();
+    quiz.schemaVersion = 2;
+    quiz.requestedCount = 12;
+    quiz.insufficientEvidence = 'The selected handler supports only three distinct checks.';
     quiz.title = '</script><script>globalThis.injected=true</script>';
     quiz.questions[0].prompt = '<img src=x onerror="globalThis.injected=true">';
     await renderQuiz(context, quiz, dir);
@@ -23,6 +26,8 @@ test('offline quiz supports keyboard answers, score, recommendations, resubmit, 
     page.on('pageerror', error => errors.push(error.message));
     page.on('request', request => { if (/^https?:/.test(request.url())) requests.push(request.url()); });
     await page.goto(pathToFileURL(path.join(dir, 'index.html')).href);
+    assert.match(await page.locator('.question-count').textContent(), /3 of 12 requested questions/);
+    assert.match(await page.locator('.question-count').textContent(), /only three distinct checks/);
     await page.waitForFunction(() => document.getElementById('answer-progress').textContent === '0 of 3 answered');
     assert.equal(await page.locator('.feedback:visible').count(), 0);
     assert.equal(await page.locator('#results').isVisible(), false);

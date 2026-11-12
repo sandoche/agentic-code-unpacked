@@ -1,4 +1,4 @@
 interface:
   display_name: "Code Comics"
-  short_description: "Explain source code with generated stick-figure comics"
-  default_prompt: "Use $xkcd to explain this code with a source-backed comic."
+  short_description: "Teach code behavior through complete generated comics"
+  default_prompt: "Use $xkcd to explain the important behaviors and boundaries in this code with complete source-backed comic images."

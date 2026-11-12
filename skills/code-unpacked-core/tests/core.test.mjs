@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, readFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, unlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { safeName, parseTarget, outputDirectory, redact, parseDiff, validateContext, resolveEvidence, captureLocal, capturePr, capturePinnedPr, makeComment, writeManifest, validateUploads, escapeHtml, jsonForHtml } from '../scripts/core.mjs';
+import { deliveryArtifacts, VERSION, safeName, parseTarget, outputDirectory, redact, parseDiff, validateContext, resolveEvidence, captureLocal, capturePr, capturePinnedPr, makeComment, writeManifest, validateUploads, escapeHtml, jsonForHtml } from '../scripts/core.mjs';
 
 test('scope parsing and collision-safe output paths', () => {
   assert.equal(parseTarget(['pr','https://github.com/acme/app/pull/42']).repo, 'acme/app');
@@ -61,8 +61,17 @@ test('codebase records dirty state and selected ranges without changing checkout
   const context=await captureLocal({kind:'docs',name:'selection',files:['a.js:2-3']},dir);
   assert.equal(context.source.dirty,true);
   assert.equal(context.files.length,1);
+  assert.ok(!context.files[0].content.includes('first'),'selected context must not retain unselected source');
   assert.equal(resolveEvidence(context,context.evidence[0].id).text,'changed\nthird');
   assert.equal(git('status','--porcelain'),before);
+  await writeFile(path.join(dir,'new.js'),'export const newValue=1;');
+  const whole=await captureLocal({kind:'codebase',name:'codebase'},dir);
+  assert.ok(whole.files.some(file=>file.path==='new.js'),'working snapshot includes untracked source');
+  assert.ok(!whole.files.some(file=>file.path.startsWith('.code-unpacked/')));
+  await unlink(path.join(dir,'a.js'));
+  const deleted=await captureLocal({kind:'codebase',name:'codebase'},dir);
+  assert.equal(deleted.files.find(file=>file.path==='a.js').status,'deleted');
+  assert.ok(deleted.files.find(file=>file.path==='a.js').baseContent.includes('first'));
   await assert.rejects(()=>captureLocal({kind:'docs',name:'escape',files:['../outside']},dir),/outside|escape/i);
   const pinned=await capturePinnedPr({kind:'pr',number:42,repo:'acme/app'},{base:headOfFixture(),head:headOfFixture(),title:'Fixture'},dir);
   assert.equal(pinned.target.kind,'pr');assert.equal(pinned.files.length,0);
@@ -81,7 +90,7 @@ test('HTML boundaries and draft delivery never invent uploaded URLs', async () =
   await writeFile(path.join(dir,'index.html'),'hello');
   await writeManifest(dir,{skill:'walkthrough',context,outputs:['index.html'],status:'complete'});
   const manifest=JSON.parse(await readFile(path.join(dir,'manifest.json'),'utf8'));
-  assert.equal(manifest.version,'0.1.0');assert.equal(manifest.delivery.status,'draft');
+  assert.equal(manifest.version,VERSION);assert.equal(manifest.delivery.status,'draft');
 });
 
 test('PR capture pins revisions, preserves unavailable patches and rejects moving heads',async()=>{
@@ -109,3 +118,5 @@ test('publication rejects missing or oversized attachments before any remote act
   assert.throws(()=>validateUploads([{path:'index.html',bytes:26*1024*1024}],urls),/size limit/i);
   assert.throws(()=>validateUploads([{path:'comic.png',bytes:11*1024*1024}],{}),/size limit/i);
 });
+
+test('delivery includes final media without duplicated source artwork',()=>{assert.deepEqual(deliveryArtifacts(['index.html','comic-01.png','artwork/source.png','storyboard.json','walkthrough.mp4']),['index.html','comic-01.png','walkthrough.mp4']);});

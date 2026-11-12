@@ -1,10 +1,13 @@
 {
   "name": "code-unpacked-core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "dependencies": {
     "mermaid": "11.17.2",
-    "playwright": "1.65.0"
+    "playwright": "1.65.0",
+    "shiki": "4.6.0",
+    "typescript": "6.0.3",
+    "php-parser": "3.7.0"
   }
 }

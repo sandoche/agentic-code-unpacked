@@ -1,20 +1,29 @@
 #!/usr/bin/env node
 import path from 'node:path';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
-import { hash, parseArgs, parseTarget, captureLocal, capturePr, capturePinnedPr, readJson, writeJson, outputDirectory, validateContext, validateUploads, makeComment } from './core.mjs';
+import { hash, parseArgs, parseTarget, captureLocal, capturePr, capturePinnedPr, addContextFiles, expandImports, readJson, writeJson, outputDirectory, validateContext, validateUploads, makeComment, deliveryArtifacts } from './core.mjs';
+import { analyzeStructure, validateAnalysis } from './analysis.mjs';
 
 async function main(){
   const [command,...args]=process.argv.slice(2);const {options}=parseArgs(args);
   if(command==='collect'){
     const root=path.resolve(options.root||process.cwd()),target=parseTarget(args);
-    const context=target.kind==='pr'?(options.metadata?await capturePinnedPr(target,await readJson(options.metadata),root):await capturePr(target,{root})):await captureLocal(target,root);
+    let context=target.kind==='pr'?(options.metadata?await capturePinnedPr(target,await readJson(options.metadata),root):await capturePr(target,{root})):await captureLocal(target,root);
+    context=await expandImports(context,root);
+    if(options['context-files'])context=await addContextFiles(context,root,options['context-files'].split(','));
+    context=await analyzeStructure(context);
     const dir=outputDirectory(root,target,'context');await writeJson(path.join(dir,'context.json'),context);console.log(path.join(dir,'context.json'));return;
+  }
+  if(command==='analyze'){
+    if(!options.context||!options.content)throw Error('analyze requires --context FILE --content analysis.json');
+    const context=validateContext(await readJson(options.context));context.analysis=validateAnalysis(context,await readJson(options.content));
+    await writeJson(options.context,context);await writeJson(path.join(path.dirname(options.context),'analysis.json'),context.analysis);console.log(options.context);return;
   }
   if(command==='validate'){validateContext(await readJson(args[0]));console.log('Context valid');return;}
   if(command==='comment'){
     const context=validateContext(await readJson(options.context));const skill=options.skill,dir=outputDirectory(options.root||process.cwd(),context.target,skill);
     const manifest=await readJson(path.join(dir,'manifest.json'));const saved=await readJson(path.join(dir,'comment-content.json')).catch(()=>({}));const summary=options.summary||saved.summary||`Explore this ${skill} artifact.`;const markdown=saved.markdown||'';
-    const attachments=manifest.artifacts.filter(a=>/\.(html|png|mp4|zip)$/.test(a.path));
+    const publishable=new Set(deliveryArtifacts(manifest.artifacts.map(a=>a.path)));const attachments=manifest.artifacts.filter(a=>publishable.has(a.path));
     let comment=makeComment({skill,context,summary,markdown,attachments:attachments.map(a=>a.path)});
     if(options.publish){
       if(!options.attachments)throw Error('Publishing HTML requires completed browser uploads. Supply --attachments <JSON mapping local paths to actual GitHub attachment URLs>, or use --draft. No comment was posted.');

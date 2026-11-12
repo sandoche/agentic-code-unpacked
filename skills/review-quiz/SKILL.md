@@ -2,7 +2,7 @@
 name: review-quiz
 description: Generate a self-contained HTML comprehension quiz for reviewing a PR, branch, codebase, or selected code, with scores and source-linked recommendations.
 metadata:
-  version: 0.1.0
+  version: 0.2.0
 ---
 
 # Review quiz
@@ -17,7 +17,7 @@ Use the installed [shared core](../code-unpacked-core/SKILL.md) to capture the
 target and pin its source revision. All target modes use the same renderer:
 
 - `$review-quiz pr https://github.com/owner/repo/pull/234`
-- `$review-quiz pr 234 --repo owner/repo`
+- `$review-quiz pr 234 --repo owner/repo --questions 12`
 - `$review-quiz branch feature-name --base main`
 - `$review-quiz codebase`
 - `$review-quiz docs auth-flow --files src/auth.ts:10-90,src/session.ts`
@@ -30,13 +30,22 @@ Let the core choose paths; do not construct branch paths yourself.
 
 ## Author the exercise
 
-Read the pinned context and the source needed to understand it. Author JSON using
-[the content schema](references/content.schema.json). Aim for eight questions;
-use fewer for a small selection rather than inventing facts or padding the quiz.
+Read the pinned context, its [shared review analysis](../code-unpacked-core/references/analysis.md),
+and the source needed to understand it. Generate/reuse that analysis independently
+of the other presentation skills. Author JSON using [the content schema](references/content.schema.json).
+Use `--questions N` to set any positive integer length; default to eight. Match
+that request with meaningful, distinct checks. When the source supports fewer,
+provide `insufficientEvidence` explaining the shortfall rather than padding with
+trivia. New content uses schema version 2, `requestedCount`, and optionally
+`generatedCount`; the renderer saves both actual and requested counts. Version 1
+content remains accepted at its original length unless a count is explicitly supplied.
 Use one correct answer and three or four plausible, distinct choices per question.
 
-Cover the meaningful changed behavior, flow, interfaces, failure cases, tests, and
-limitations. Include security only when the evidence supports it. Avoid name or
+Cover the meaningful changed behavior, flow, interfaces, failure cases, tests,
+limitations, and where future work would extend the code. Prefer questions that
+trace a request, distinguish persistence boundaries, or assess a test's limits.
+Use the `extension` topic for source-grounded extension decisions; label proposed
+changes in the explanation. Include security only when the evidence supports it. Avoid name or
 formatting trivia. Do not turn an inferred requirement into a factual answer.
 Explain each answer, cite at least one captured evidence ID, and supply a concrete
 check to recommend after an incorrect or unanswered response. Recommendations
@@ -46,8 +55,12 @@ reuse the question's evidence. Record missing context and unresolved intent in
 ## Render and deliver
 
 ```sh
-node <skills-dir>/review-quiz/scripts/review-quiz.mjs render --context context.json --content quiz-content.json --root <target-repository>
+node <skills-dir>/review-quiz/scripts/review-quiz.mjs render --context context.json --content quiz-content.json --root <target-repository> --questions 12
 ```
+
+Omit `--questions` for the authored request or the default of eight in schema 2.
+The renderer refuses mismatched authored/requested lengths, excess questions, and
+unexplained shortfalls; it never invents or silently truncates questions.
 
 The deterministic renderer validates IDs and evidence, escapes authored text, and
 writes `index.html`, `quiz.json`, `manifest.json`, and draft comment files. The page

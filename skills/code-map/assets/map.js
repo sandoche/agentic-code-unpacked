@@ -6,14 +6,18 @@ const edges = document.getElementById('edges');
 const detail = document.getElementById('detail');
 const search = document.getElementById('search');
 const changed = document.getElementById('changed');
+const topicFilter = document.getElementById('topic-filter');
+const flowFilter = document.getElementById('flow-filter');
+const kindFilter = document.getElementById('relationship-kind');
 const svgNS = 'http://www.w3.org/2000/svg';
 const nodes = model.nodes.map(node => ({ ...node }));
+const byId = new Map(nodes.map(node => [node.id, node]));
+const bySymbol = new Map(model.symbols.map(symbol => [symbol.id, symbol]));
 const initial = new Map(nodes.map(node => [node.id, { x: node.x, y: node.y }]));
-const elements = new Map();
+const elements = new Map(), groupLabels = new Map();
 const listItems = new Map([...document.querySelectorAll('#file-list li')].map(item => [item.dataset.file, item]));
 let view = { x: 20, y: 20, scale: 1 };
-let selected;
-let gesture;
+let selected, selectedSymbol, gesture;
 
 function element(tag, text, className) {
   const item = document.createElement(tag);
@@ -21,51 +25,67 @@ function element(tag, text, className) {
   if (className) item.className = className;
   return item;
 }
-
 function transform() {
   plane.style.transform = `translate(${view.x}px,${view.y}px) scale(${view.scale})`;
   plane.classList.toggle('semantic-small', view.scale < .6);
   document.getElementById('zoom-label').textContent = `${Math.round(view.scale * 100)}%`;
 }
-
-function visible(node) {
-  return node.path.toLowerCase().includes(search.value.toLowerCase()) && (!changed.checked || node.status !== 'snapshot');
+function matchesSearch(node) {
+  const query = search.value.toLowerCase();
+  return node.path.toLowerCase().includes(query) || node.symbolIds.some(id => bySymbol.get(id).name.toLowerCase().includes(query));
 }
-
+function visible(node) {
+  const topic = model.topics.find(item => item.id === topicFilter.value);
+  const flow = model.flows.find(item => item.id === flowFilter.value);
+  return matchesSearch(node)
+    && (!changed.checked || !node.contextual && !['snapshot', 'context', 'unchanged'].includes(node.status))
+    && (!topic || topic.fileIds.includes(node.id))
+    && (!flow || flow.fileIds.includes(node.id));
+}
+function edgeVisible(edge) {
+  return (!kindFilter.value || edge.kind === kindFilter.value) && visible(byId.get(edge.fromFileId)) && visible(byId.get(edge.toFileId));
+}
+function provenance(value) { return typeof value === 'string' ? value : JSON.stringify(value); }
 function drawEdges() {
   edges.replaceChildren();
-  for (const edge of model.relationships) {
-    const from = nodes.find(node => node.id === edge.fromFileId);
-    const to = nodes.find(node => node.id === edge.toFileId);
-    if (!visible(from) || !visible(to)) continue;
+  const bundles = new Map();
+  for (const edge of model.relationships.filter(edgeVisible)) {
+    const key = JSON.stringify([edge.fromFileId, edge.toFileId, edge.kind]);
+    if (!bundles.has(key)) bundles.set(key, []);
+    bundles.get(key).push(edge);
+  }
+  for (const bundle of bundles.values()) {
+    const edge = bundle[0], from = byId.get(edge.fromFileId), to = byId.get(edge.toFileId);
     const x1 = from.x + from.width / 2, y1 = from.y + from.height / 2;
     const x2 = to.x + to.width / 2, y2 = to.y + to.height / 2;
     const line = document.createElementNS(svgNS, 'path');
-    line.setAttribute('d', `M${x1},${y1} C${x1},${(y1+y2)/2} ${x2},${(y1+y2)/2} ${x2},${y2}`);
-    line.setAttribute('class', 'edge');
+    const self = from.id === to.id;
+    line.setAttribute('d', self ? `M${from.x + from.width},${from.y + 35} C${from.x + from.width + 95},${from.y - 30} ${from.x + from.width + 95},${from.y + from.height + 30} ${from.x + from.width},${from.y + from.height - 35}` : `M${x1},${y1} C${x1},${(y1+y2)/2} ${x2},${(y1+y2)/2} ${x2},${y2}`);
+    line.setAttribute('class', `edge kind-${edge.kind.replace(/[^a-z-]/gi, '')}`);
+    line.dataset.kind = edge.kind; line.dataset.count = String(bundle.length);
+    if (selectedSymbol && !bundle.some(item => item.fromSymbolId === selectedSymbol || item.toSymbolId === selectedSymbol)) line.classList.add('edge-muted');
     const title = document.createElementNS(svgNS, 'title');
-    title.textContent = `${from.path} → ${to.path}: ${edge.label}`;
+    title.textContent = `${from.path} → ${to.path}: ${bundle.map(item => `${item.kind}: ${item.label} [${provenance(item.provenance)}]`).join('; ')}`;
     line.append(title);
     const label = document.createElementNS(svgNS, 'text');
-    label.setAttribute('x', String((x1+x2)/2)); label.setAttribute('y', String((y1+y2)/2 - 7));
-    label.setAttribute('class', 'edge-label'); label.textContent = edge.label;
+    label.setAttribute('x', String(self ? from.x + from.width + 15 : (x1+x2)/2));
+    label.setAttribute('y', String(self ? from.y + from.height / 2 : (y1+y2)/2 - 7));
+    label.setAttribute('class', 'edge-label'); label.textContent = `${edge.kind}${bundle.length > 1 ? ` ×${bundle.length}` : ''}`;
     edges.append(line, label);
   }
 }
-
 function filter() {
   let count = 0;
   for (const node of nodes) {
     const show = visible(node);
-    elements.get(node.id).hidden = !show;
-    listItems.get(node.id).hidden = !show;
+    elements.get(node.id).hidden = !show; listItems.get(node.id).hidden = !show;
     if (show) count++;
   }
-  document.getElementById('count').textContent = `${count} of ${nodes.length} files · ${model.relationships.length} cited relationships`;
+  for (const group of model.groups) groupLabels.get(group.name).hidden = !group.fileIds.some(id => visible(byId.get(id)));
+  document.getElementById('count').textContent = `${count} of ${nodes.length} files · ${model.relationships.filter(edgeVisible).length} cited relationships`;
   document.getElementById('empty').hidden = count !== 0;
   drawEdges();
 }
-
 function addCitations(parent, citations) {
   const list = element('div', undefined, 'sources');
   for (const citation of citations) {
@@ -76,86 +96,225 @@ function addCitations(parent, citations) {
   }
   parent.append(list);
 }
-
-function codeBlock(node, mode) {
+function primarySource(citations) {
+  const ordered = [...citations].sort((a, b) => Number(b.side === 'head') - Number(a.side === 'head') || (b.endLine - b.startLine) - (a.endLine - a.startLine));
+  if (!ordered.length) return;
+  const primary = element('div', undefined, 'primary-source');
+  addCitations(primary, [ordered[0]]); detail.append(primary);
+  if (ordered.length === 1) return;
+  const more = element('details', undefined, 'source-evidence');
+  more.append(element('summary', `Additional source evidence (${ordered.length - 1})`));
+  addCitations(more, ordered.slice(1));
+  return more;
+}
+function symbolButton(id) {
+  const symbol = bySymbol.get(id);
+  const button = element('button', `${symbol.name} · ${symbol.kind}`, 'symbol-link');
+  button.setAttribute('aria-label', `Open symbol ${symbol.name}`);
+  button.addEventListener('click', () => select(byId.get(symbol.fileId), true, symbol));
+  return button;
+}
+function fileButton(id) {
+  const node = byId.get(id);
+  const button = element('button', node.path, 'file-link');
+  button.setAttribute('aria-label', `Open file ${node.path}`);
+  button.addEventListener('click', () => select(node, true));
+  return button;
+}
+function teachingClaims(parent, title, claims) {
+  if (!claims?.length) return;
+  parent.append(element('h3', title));
+  for (const item of claims) {
+    const section = element('div', undefined, 'teaching-claim');
+    section.append(element('p', item.text)); addCitations(section, item.citations || []); parent.append(section);
+  }
+}
+function showGuide() {
+  selectedSymbol = undefined;
+  detail.replaceChildren(element('h2', 'Purpose and review order'), element('p', model.summary));
+  const flow = model.flows.find(item => item.id === flowFilter.value);
+  const topics = topicFilter.value ? model.topics.filter(item => item.id === topicFilter.value) : model.topics;
+  if (flow) {
+    detail.append(element('h3', flow.title));
+    const steps = element('ol', undefined, 'flow-steps');
+    for (const step of flow.steps) {
+      const item = element('li'); item.append(element('p', step.text));
+      for (const id of step.symbolIds || []) item.append(symbolButton(id));
+      addCitations(item, step.citations); steps.append(item);
+    }
+    detail.append(steps);
+  }
+  for (const topic of topics) {
+    const section = element('section', undefined, 'review-topic'); section.id = `topic-${topic.id}`;
+    const focus = element('button', topic.title, 'topic-link');
+    focus.addEventListener('click', () => { topicFilter.value = topic.id; flowFilter.value = ''; changed.checked = false; filter(); fit(); showGuide(); });
+    section.append(focus, element('p', topic.summary));
+    if (topic.before) section.append(element('p', `Before: ${typeof topic.before === 'string' ? topic.before : JSON.stringify(topic.before)}`));
+    if (topic.after) section.append(element('p', `After: ${typeof topic.after === 'string' ? topic.after : JSON.stringify(topic.after)}`));
+    teachingClaims(section, 'Review focus', topic.reviewFocus);
+    teachingClaims(section, 'Where to extend (proposed)', topic.extensionPoints);
+    addCitations(section, topic.citations); detail.append(section);
+  }
+  if (!topics.length && !flow) detail.append(element('p', 'Select a file to inspect its functions, typed relationships, and source. Teaching topics can be supplied through shared analysis.', 'muted'));
+  detail.append(element('p', `${model.symbols.length} extracted symbols; ${model.unresolved.length} unresolved or external targets. Context files are labelled and are not counted as changes.`, 'muted'));
+  drawEdges();
+}
+function highlightedSource(node, mode) {
+  const html = node.highlighted?.[mode];
+  if (!html) return undefined;
+  // Only the shared renderer creates this markup; source text is never used as HTML.
+  const template = document.createElement('template'); template.innerHTML = html;
+  return template.content.firstElementChild;
+}
+function codeBlock(node, mode, symbol) {
+  if (mode !== 'diff') {
+    const source = mode === 'base' ? node.baseContent : node.content;
+    if (typeof source !== 'string') return element('pre', 'Source is unavailable for this revision.');
+    const root = highlightedSource(node, mode);
+    if (root) {
+      const range = symbol ? [symbol.startLine, symbol.endLine] : node.selectedRange;
+      if (range) for (const line of root.querySelectorAll('.line')) {
+        const number = Number(line.dataset.line);
+        if (number < range[0] || number > range[1]) line.remove();
+        else if (symbol) line.classList.add('focus');
+      }
+      return root;
+    }
+  }
   const pre = element('pre');
   if (mode === 'diff' && node.hunks?.length) {
+    const highlighted = {};
+    for (const side of ['head', 'base']) highlighted[side] = new Map([...(highlightedSource(node, side)?.querySelectorAll('.line') || [])].map(line => [Number(line.dataset.line), line]));
     for (const hunk of node.hunks) {
       pre.append(element('span', hunk.header, 'hunk-header'));
       for (const line of hunk.lines) {
         const row = element('span', undefined, `diff-line ${line.kind}`);
-        row.append(element('span', line.oldLine ?? '', 'line-number'), element('span', line.newLine ?? '', 'line-number'), document.createTextNode(`${line.kind === 'add' ? '+' : line.kind === 'remove' ? '−' : ' '} ${line.text}`));
+        row.append(element('span', line.oldLine ?? '', 'line-number'), element('span', line.newLine ?? '', 'line-number'), document.createTextNode(`${line.kind === 'add' ? '+' : line.kind === 'remove' ? '−' : ' '} `));
+        const syntax = highlighted[line.kind === 'remove' ? 'base' : 'head'].get(line.kind === 'remove' ? line.oldLine : line.newLine);
+        if (syntax?.textContent === line.text) row.append(...[...syntax.childNodes].map(token => token.cloneNode(true)));
+        else row.append(document.createTextNode(line.text));
         pre.append(row);
       }
     }
   } else {
     const source = mode === 'base' ? node.baseContent : node.content;
-    if (typeof source !== 'string') { pre.textContent = 'Source is unavailable for this revision.'; return pre; }
-    const lines = source.replace(/\n$/, '').split('\n');
-    const [start, end] = node.selectedRange || [1, lines.length];
-    for (let index = start - 1; index < Math.min(end, lines.length); index++) {
-      const row = element('span', undefined, 'diff-line');
-      row.append(element('span', index + 1, 'line-number'), document.createTextNode(lines[index])); pre.append(row);
-    }
+    const lines = String(source ?? 'Source is unavailable for this revision.').replace(/\n$/, '').split('\n');
+    const [start, end] = symbol ? [symbol.startLine, symbol.endLine] : node.selectedRange || [1, lines.length];
+    for (let index = start - 1; index < Math.min(end, lines.length); index++) { const row = element('span', undefined, 'diff-line'); row.append(element('span', index + 1, 'line-number'), document.createTextNode(lines[index])); pre.append(row); }
   }
   return pre;
 }
-
-function select(node, center = false) {
-  selected = node.id;
+function reveal(node) {
+  if (node.contextual || ['snapshot', 'context', 'unchanged'].includes(node.status)) changed.checked = false;
+  if (!matchesSearch(node)) search.value = '';
+  if (topicFilter.value && !model.topics.find(item => item.id === topicFilter.value)?.fileIds.includes(node.id)) topicFilter.value = '';
+  if (flowFilter.value && !model.flows.find(item => item.id === flowFilter.value)?.fileIds.includes(node.id)) flowFilter.value = '';
+  filter();
+}
+function relationshipDetails(node, symbol, controls) {
+  const sections = [
+    ['callers', 'Callers', edge => edge.kind === 'calls' && (symbol ? edge.toSymbolId === symbol.id : edge.toFileId === node.id)],
+    ['callees', 'Callees', edge => edge.kind === 'calls' && (symbol ? edge.fromSymbolId === symbol.id : edge.fromFileId === node.id)],
+    ['constructs', 'Constructs', edge => edge.kind === 'constructs'],
+    ['imports', 'Imports (file relationships)', edge => edge.kind === 'imports'],
+    ['routes', 'Verified routes', edge => ['routes', 'route'].includes(edge.kind)],
+    ['tests', 'Test relationships', edge => ['tests', 'test'].includes(edge.kind)],
+    ['other-relationships', 'Other source relationships', edge => !['calls', 'constructs', 'imports', 'routes', 'route', 'tests', 'test'].includes(edge.kind)],
+  ];
+  const relationships = model.relationships.filter(edge => {
+    if (edge.fromFileId !== node.id && edge.toFileId !== node.id) return false;
+    if (!symbol || edge.kind === 'imports') return true;
+    return edge.fromSymbolId === symbol.id || edge.toSymbolId === symbol.id;
+  });
+  for (const [id, title, match] of sections) {
+    const matching = relationships.filter(match);
+    if (!matching.length) continue;
+    const section = element('section', undefined, 'relationship-section'); section.id = id;
+    const heading = id === 'routes' && !matching.every(edge => /verified|source-ast/.test(provenance(edge.provenance))) ? 'Route bindings (verification not supplied)' : title;
+    section.append(element('h3', `${heading} (${matching.length})`));
+    const jump = element('button', `${title} (${matching.length})`);
+    jump.setAttribute('aria-label', `Show ${id === 'other-relationships' ? 'other relationships' : id}`);
+    jump.setAttribute('aria-controls', id);
+    jump.addEventListener('click', () => { detail.scrollTop += section.getBoundingClientRect().top - detail.getBoundingClientRect().top - 12; section.tabIndex = -1; section.focus({ preventScroll: true }); });
+    controls.append(jump);
+    for (const edge of matching) {
+      const block = element('div', undefined, 'relationship-item');
+      const outgoing = symbol ? edge.fromSymbolId === symbol.id : edge.fromFileId === node.id;
+      const symbolId = outgoing ? edge.toSymbolId : edge.fromSymbolId;
+      const fileId = outgoing ? edge.toFileId : edge.fromFileId;
+      block.append(symbolId ? symbolButton(symbolId) : fileButton(fileId), element('p', edge.label), element('small', `${edge.kind} · ${provenance(edge.provenance)}`, 'provenance'));
+      addCitations(block, edge.citations); section.append(block);
+    }
+    detail.append(section);
+  }
+  controls.hidden = !relationships.length;
+  if (!relationships.length) detail.append(element('p', 'No source-backed relationships were supplied for this selection. Missing edges do not prove independence.', 'empty-notes'));
+}
+function unresolvedDetails(node, symbol) {
+  const unresolved = model.unresolved.filter(item => item.fileId === node.id && (!symbol || item.fromSymbolId === symbol.id));
+  if (!unresolved.length) return;
+  const section = element('details', undefined, 'unresolved'); section.id = 'unresolved'; section.open = !!symbol;
+  section.append(element('summary', `Unresolved or external targets (${unresolved.length})`));
+  section.append(element('p', 'These are extraction gaps, not verified calls to captured code. External libraries and dynamic dispatch can legitimately appear here.', 'warning'));
+  for (const item of unresolved.slice(0, 20)) {
+    const block = element('div'); block.append(element('p', `${item.expression || 'Dynamic expression'}${item.line ? ` · line ${item.line}` : ''}: ${item.reason || 'Target unavailable'}`)); addCitations(block, item.citations); section.append(block);
+  }
+  if (unresolved.length > 20) section.append(element('p', `${unresolved.length - 20} more entries are retained in map.json. Select a function to narrow this list.`, 'muted'));
+  detail.append(section);
+}
+function select(node, center = false, symbol, updateHash = true) {
+  reveal(node); selected = node.id; selectedSymbol = symbol?.id;
   for (const item of nodes) elements.get(item.id).classList.toggle('selected', item.id === selected);
   document.querySelectorAll('.file-select').forEach(button => button.setAttribute('aria-current', String(button.dataset.id === selected)));
-  detail.replaceChildren(element('h2', node.path));
-  const description = [node.status, node.oldPath && node.oldPath !== node.path ? `from ${node.oldPath}` : '', node.selectedRange ? `selected lines ${node.selectedRange.join('–')}` : ''].filter(Boolean).join(' · ');
+  detail.replaceChildren(element('h2', symbol?.name || node.path));
+  if (symbol) { const back = element('button', `Back to ${node.path}`, 'back-file'); back.addEventListener('click', () => select(node)); detail.append(back); }
+  const description = [node.contextual ? 'context (unchanged neighbor)' : node.status, symbol ? `${symbol.kind} · lines ${symbol.startLine}–${symbol.endLine}` : '', node.oldPath && node.oldPath !== node.path ? `from ${node.oldPath}` : '', node.selectedRange ? `selected lines ${node.selectedRange.join('–')}` : ''].filter(Boolean).join(' · ');
   detail.append(element('p', description, 'file-state'));
   if (node.omission) detail.append(element('p', node.omission, 'warning'));
-  const citations = model.evidence.filter(item => item.fileId === node.id).map(item => ({ ...item, path: item.side === 'base' && node.oldPath ? node.oldPath : node.path }));
-  addCitations(detail, citations);
+  const moreEvidence = primarySource(symbol ? symbol.citations : model.evidence.filter(item => item.fileId === node.id).map(item => ({ ...item, path: item.side === 'base' && node.oldPath ? node.oldPath : node.path })));
+  if (!symbol && node.symbolIds.length) {
+    const list = element('section', undefined, 'symbol-list'); list.append(element('h3', `Functions and symbols (${node.symbolIds.length})`));
+    const buttons = element('div', undefined, 'symbol-buttons');
+    for (const id of node.symbolIds) buttons.append(symbolButton(id)); list.append(buttons); detail.append(list);
+  }
+  const controls = element('nav', undefined, 'relationship-controls'); controls.id = 'relationship-controls'; controls.setAttribute('aria-label', 'Relationship navigation'); detail.append(controls);
+  if (node.coverageReason) detail.append(element('p', `${node.coverageRole}: ${node.coverageReason}`, 'muted'));
+  if (moreEvidence) detail.append(moreEvidence);
   if (!node.binary && !node.omission) {
     const modes = [];
-    if (node.hunks?.length) modes.push(['diff', 'Unified diff']);
+    if (!symbol && node.hunks?.length) modes.push(['diff', 'Unified diff']);
     if (typeof node.content === 'string') modes.push(['head', 'Head source']);
     if (typeof node.baseContent === 'string') modes.push(['base', 'Base source']);
     if (!modes.length) detail.append(element('p', 'No code excerpt was supplied.', 'warning'));
     else {
       const chooser = element('select'); chooser.setAttribute('aria-label', 'Code view');
       for (const [value, label] of modes) { const option = element('option', label); option.value = value; chooser.append(option); }
-      const code = element('div'); code.append(codeBlock(node, modes[0][0]));
-      chooser.addEventListener('change', () => code.replaceChildren(codeBlock(node, chooser.value)));
-      detail.append(chooser, code);
+      const code = element('div'); code.append(codeBlock(node, modes[0][0], symbol));
+      chooser.addEventListener('change', () => code.replaceChildren(codeBlock(node, chooser.value, symbol))); detail.append(chooser, code);
     }
   }
   for (const note of model.annotations.filter(item => item.fileId === node.id)) {
-    const block = element('section', undefined, 'annotation');
-    block.append(element('h3', note.title), element('p', note.text)); addCitations(block, note.citations); detail.append(block);
+    const block = element('section', undefined, 'annotation'); block.append(element('h3', note.title), element('p', note.text)); addCitations(block, note.citations); detail.append(block);
   }
-  const relationships = model.relationships.filter(edge => edge.fromFileId === node.id || edge.toFileId === node.id);
-  if (relationships.length) {
-    detail.append(element('h3', 'Source-backed relationships'));
-    for (const edge of relationships) {
-      const from = nodes.find(item => item.id === edge.fromFileId), to = nodes.find(item => item.id === edge.toFileId);
-      const block = element('div'); block.append(element('p', `${from.path} → ${to.path}: ${edge.label}`)); addCitations(block, edge.citations); detail.append(block);
-    }
-  } else detail.append(element('p', 'No source-backed relationships were supplied for this file.', 'empty-notes'));
+  relationshipDetails(node, symbol, controls); unresolvedDetails(node, symbol);
+  detail.scrollTop = 0;
   if (center) { view.x = viewport.clientWidth / 2 - (node.x + node.width / 2) * view.scale; view.y = viewport.clientHeight / 2 - (node.y + node.height / 2) * view.scale; transform(); }
+  if (updateHash) history.replaceState(null, '', `#${symbol ? symbol.anchor : `file=${encodeURIComponent(node.id)}`}`);
+  drawEdges();
 }
-
 for (const group of model.groups) {
   const label = element('div', group.name === '.' ? 'Repository root' : group.name, 'group-label');
-  label.style.left = `${group.x}px`; label.style.top = `${group.y}px`; document.getElementById('groups').append(label);
+  label.style.left = `${group.x}px`; label.style.top = `${group.y}px`; document.getElementById('groups').append(label); groupLabels.set(group.name, label);
 }
 for (const node of nodes) {
-  const card = element('article', undefined, 'file-card'); card.dataset.id = node.id; card.dataset.moved = 'false';
+  const card = element('article', undefined, `file-card${node.contextual ? ' context-card' : ''}`); card.dataset.id = node.id; card.dataset.moved = 'false'; card.dataset.role = node.contextual ? 'context' : 'changed';
   card.style.left = `${node.x}px`; card.style.top = `${node.y}px`;
   const heading = element('div', node.path.split('/').at(-1), 'card-heading'); heading.title = node.path;
-  const meta = element('div', undefined, 'card-meta'); meta.append(element('span', node.status, `status ${node.status}`), element('span', `+${node.additions}`, 'stat-add'), document.createTextNode(' / '), element('span', `−${node.deletions}`, 'stat-remove'));
+  const meta = element('div', undefined, 'card-meta');
+  meta.append(element('span', node.contextual ? 'context' : node.status, `status ${node.contextual ? 'context' : node.status}`), element('span', `+${node.additions}`, 'stat-add'), document.createTextNode(' / '), element('span', `−${node.deletions}`, 'stat-remove'), document.createTextNode(` · ${node.symbolIds.length} symbols`));
   card.append(heading, meta, element('div', node.omission || node.path, 'card-path'));
   card.addEventListener('click', () => { if (!card.dataset.justDragged) select(node); });
-  heading.addEventListener('pointerdown', event => {
-    if (event.button !== 0) return;
-    event.stopPropagation(); heading.setPointerCapture(event.pointerId);
-    gesture = { kind: 'node', id: node.id, pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, x: node.x, y: node.y, dragged: false };
-  });
+  heading.addEventListener('pointerdown', event => { if (event.button !== 0) return; event.stopPropagation(); heading.setPointerCapture(event.pointerId); gesture = { kind: 'node', id: node.id, pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, x: node.x, y: node.y, dragged: false }; });
   heading.addEventListener('pointermove', event => {
     if (gesture?.kind !== 'node' || gesture.id !== node.id || gesture.pointerId !== event.pointerId) return;
     const dx = (event.clientX - gesture.startX) / view.scale, dy = (event.clientY - gesture.startY) / view.scale;
@@ -164,16 +323,15 @@ for (const node of nodes) {
   });
   heading.addEventListener('pointerup', () => { if (gesture?.kind === 'node') { if (gesture.dragged) { card.dataset.justDragged = 'true'; setTimeout(() => delete card.dataset.justDragged, 0); } gesture = undefined; } });
   cards.append(card); elements.set(node.id, card);
+  if (node.contextual) { const list = listItems.get(node.id); list.classList.add('context-file'); list.querySelector('small').textContent = 'context (unchanged neighbor)'; }
 }
-document.querySelectorAll('.file-select').forEach(button => button.addEventListener('click', () => select(nodes.find(node => node.id === button.dataset.id), true)));
-
+document.querySelectorAll('.file-select').forEach(button => button.addEventListener('click', () => select(byId.get(button.dataset.id), true)));
 function zoom(factor, x = viewport.clientWidth / 2, y = viewport.clientHeight / 2) {
   const next = Math.min(2.5, Math.max(.12, view.scale * factor));
   view.x = x - (x - view.x) * next / view.scale; view.y = y - (y - view.y) * next / view.scale; view.scale = next; transform();
 }
 function fit() {
-  const shown = nodes.filter(visible);
-  if (!shown.length) return;
+  const shown = nodes.filter(visible); if (!shown.length) return;
   const minX = Math.min(...shown.map(node => node.x)), minY = Math.min(...shown.map(node => node.y));
   const maxX = Math.max(...shown.map(node => node.x + node.width)), maxY = Math.max(...shown.map(node => node.y + node.height));
   view.scale = Math.min(1, Math.max(.12, Math.min((viewport.clientWidth - 50) / (maxX - minX), (viewport.clientHeight - 50) / (maxY - minY))));
@@ -191,12 +349,20 @@ viewport.addEventListener('keydown', event => {
   else if (event.key === '-') zoom(1 / 1.2);
   else if (event.key === '0') fit();
 });
-search.addEventListener('input', filter); changed.addEventListener('change', filter);
+search.addEventListener('input', filter); changed.addEventListener('change', () => { filter(); fit(); });
+topicFilter.addEventListener('change', () => { if (topicFilter.value) changed.checked = false; filter(); fit(); showGuide(); });
+flowFilter.addEventListener('change', () => { if (flowFilter.value) changed.checked = false; filter(); fit(); showGuide(); });
+kindFilter.addEventListener('change', drawEdges);
+document.getElementById('review-guide').addEventListener('click', showGuide);
 document.getElementById('zoom-in').addEventListener('click', () => zoom(1.2));
 document.getElementById('zoom-out').addEventListener('click', () => zoom(1 / 1.2));
 document.getElementById('fit').addEventListener('click', fit);
-document.getElementById('reset').addEventListener('click', () => {
-  for (const node of nodes) { Object.assign(node, initial.get(node.id)); const card = elements.get(node.id); card.style.left = `${node.x}px`; card.style.top = `${node.y}px`; card.dataset.moved = 'false'; }
-  drawEdges(); fit();
-});
-filter(); fit();
+document.getElementById('reset').addEventListener('click', () => { for (const node of nodes) { Object.assign(node, initial.get(node.id)); const card = elements.get(node.id); card.style.left = `${node.x}px`; card.style.top = `${node.y}px`; card.dataset.moved = 'false'; } drawEdges(); fit(); });
+function openAnchor() {
+  const params = new URLSearchParams(location.hash.slice(1));
+  const symbol = bySymbol.get(params.get('symbol'));
+  if (symbol) select(byId.get(symbol.fileId), true, symbol, false);
+  else if (byId.has(params.get('file'))) select(byId.get(params.get('file')), true, undefined, false);
+}
+window.addEventListener('hashchange', openAnchor);
+filter(); fit(); showGuide(); openAnchor();

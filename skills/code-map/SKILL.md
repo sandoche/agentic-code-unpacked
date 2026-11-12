@@ -1,8 +1,8 @@
 ---
 name: code-map
-description: Generate an offline explorable code canvas for a pull request, branch, codebase, or selected files, with diff cards, source details, and cited relationships.
+description: Generate an offline code canvas for a PR, branch, codebase, or selected files, with file/function exploration, typed relationships, callers, callees, and teaching filters.
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
 ---
 
 # Code Map
@@ -21,13 +21,23 @@ context across other Code Unpacked skills.
 
 ## Explain and render
 
-- A map requires no model-authored data. For a useful review, optionally write
+- A map consumes the core's extracted symbols and graph automatically; no
+  model-authored graph is required. Reuse or author the shared
+  [review analysis](../code-unpacked-core/references/analysis.md) to explain
+  purpose, behavior changes, review order, and extension points. Its topics and
+  flows become teaching filters. Flow steps work with evidence even when they
+  have no symbol IDs.
+- For extra file notes, optionally write
   `content.json` using [the content schema](references/content.schema.json): title,
-  summary, file annotations, and source-backed relationships.
+  summary, file annotations, and source-backed relationships. Context/content v1
+  input remains supported; generated map data uses schema version 2.
 - Inspect code before describing it. Cite existing evidence IDs on every
   annotation and relationship. Evidence must substantiate the statement; a valid
-  reference alone does not establish a dependency. Name edge semantics precisely,
-  such as `imports`; never turn an import into a claimed call or data flow.
+  reference alone does not establish a dependency. Preserve `kind` and
+  `provenance`: calls, imports, construction, routes, and test relationships have
+  different meanings. Bind verified callback, HTTP, route, or test edges only
+  after inspecting both endpoints at the captured revision. Dynamic targets in
+  `unresolved` stay gaps; do not fabricate missing edges.
 - Keep explanations as plain text. Do not create coordinates, diff lines, or
   source excerpts manually; the renderer derives them from the captured context.
 - Without dependency evidence, generate the directory-grouped map and retain its
@@ -48,8 +58,14 @@ under `.code-unpacked/pr/<number>/code-map/`, `branch/<safe-name>/code-map/`, or
 ## Inspect and deliver
 
 Open `index.html` locally. Check search, file selection, unified diff/head/base
-views, pan, zoom, dragging, reset, and the keyboard-accessible file list. Source
-details load only when selected; every captured path remains searchable. Read the
+views, pan, zoom, dragging, reset, and the keyboard-accessible file list. Open a
+function from its file, follow callers/callees, and check its stable symbol link.
+Use topic/flow and relationship-type filters. PR/branch views initially show
+changed files; contextual unchanged neighbors have distinct styling and appear
+when Changed only is cleared or a symbol link opens one. A context role excludes
+a file from changed-only views even if its status says modified. Source and
+generated syntax highlighting enter the DOM only when selected; every captured
+path and symbol remains searchable. Read the
 coverage panel and distinguish omissions from empty files. PR/branch maps show
 changes; codebase/docs maps show source snapshots.
 
@@ -60,7 +76,7 @@ path is a public preview URL. Demo requests for drafts stay local.
 Run meaningful renderer and browser checks with:
 
 ```sh
-node --test skills/code-map/tests/code-map.test.mjs
+node --test skills/code-map/tests/*.test.mjs
 ```
 
 Rendering needs Node and the shared core. Browser checks need the suite's

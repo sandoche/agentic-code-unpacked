@@ -26,32 +26,56 @@ const evidence = (context, ids, required = true) => {
   array(ids, 'evidence');
   if (required) assertEvidence(context, ids); else for (const id of ids) resolveEvidence(context, id);
 };
+const familyTitle = family => familyTitles[family] || family.replaceAll('-', ' ').replace(/^./, letter => letter.toUpperCase());
+function validateClaim(context, claim, label) {
+  if (!claim || typeof claim !== 'object') throw Error(`${label} must be a source-backed claim`);
+  text(claim.markdown, `${label} markdown`);
+  if (!bases.has(claim.basis)) throw Error(`Invalid ${label} basis: ${claim.basis}`);
+  evidence(context, claim.evidence);
+}
+function analysisLinks(context, ids, kind) {
+  if (ids === undefined) return;
+  array(ids, `${kind} IDs`);
+  const known = new Set((context.analysis?.[kind === 'topic' ? 'topics' : 'flows'] || []).map(item => item.id));
+  for (const id of ids) if (!known.has(id)) throw Error(`Unknown analysis ${kind}: ${id}`);
+}
 
 export function validateDesign(context, content) {
   validateContext(context);
-  if (content?.schemaVersion !== 1) throw Error('Design schemaVersion must be 1');
-  text(content.title, 'title'); text(content.summary, 'summary');
-  evidence(context, content.summaryEvidence);
-  array(content.coverage, 'coverage'); array(content.documents, 'documents');
+  if (![1, 2].includes(content?.schemaVersion)) throw Error('Design schemaVersion must be 1 or 2');
+  text(content.title, 'title');
+  if (content.schemaVersion === 1) {
+    text(content.summary, 'summary'); evidence(context, content.summaryEvidence);
+  } else {
+    if (!content.overview || typeof content.overview !== 'object') throw Error('A concise overview is required');
+    validateClaim(context, content.overview.purpose, 'overview purpose');
+    for (const key of ['reviewFocus', 'extensionContext']) {
+      array(content.overview[key], `overview ${key}`);
+      if (!content.overview[key].length) throw Error(`overview ${key} needs at least one useful claim`);
+      for (const claim of content.overview[key]) validateClaim(context, claim, `overview ${key}`);
+    }
+  }
+  if (content.coverage !== undefined) array(content.coverage, 'coverage');
+  array(content.documents, 'documents');
   const coverage = new Map();
-  for (const entry of content.coverage) {
-    if (!FAMILIES.includes(entry.family)) throw Error(`Unknown coverage family: ${entry.family}`);
+  for (const entry of content.coverage || []) {
+    identifier(entry.family, 'coverage family');
     if (coverage.has(entry.family)) throw Error(`Duplicate coverage family: ${entry.family}`);
     if (!statuses.has(entry.status)) throw Error(`Invalid coverage status: ${entry.status}`);
     text(entry.reason, 'coverage reason');
     evidence(context, entry.evidence, entry.status === 'generated');
     coverage.set(entry.family, entry);
   }
-  if (coverage.size !== FAMILIES.length) throw Error('Coverage must account for all 11 document families');
-  if (coverage.get('requirements').status !== 'generated') throw Error('An observed requirements overview is always required');
-  const ids = new Set(), diagrams = new Set();
+  const ids = new Set(), diagrams = new Set(), questions = new Set();
   for (const doc of content.documents) {
     identifier(doc.id, 'document id');
     if (ids.has(doc.id)) throw Error(`Duplicate document id: ${doc.id}`);
     ids.add(doc.id); text(doc.title, 'document title');
-    if (coverage.get(doc.family)?.status !== 'generated') throw Error(`Document ${doc.id} must belong to a generated coverage family`);
+    identifier(doc.family, 'document family');
+    if (coverage.has(doc.family) && coverage.get(doc.family).status !== 'generated') throw Error(`Document ${doc.id} must belong to a generated coverage family`);
+    analysisLinks(context, doc.topicIds, 'topic'); analysisLinks(context, doc.flowIds, 'flow');
     array(doc.sections, 'document sections');
-    if (!doc.sections.length) throw Error(`Document ${doc.id} requires at least one section`);
+    if (!doc.sections.length && !(content.schemaVersion === 2 && doc.diagrams?.length)) throw Error(`Document ${doc.id} requires explanatory sections or focused diagrams`);
     for (const section of doc.sections) {
       text(section.heading, 'section heading'); text(section.markdown, 'section markdown');
       if (!bases.has(section.basis)) throw Error(`Invalid section basis: ${section.basis}`);
@@ -70,12 +94,19 @@ export function validateDesign(context, content) {
       if (diagrams.has(diagram.id)) throw Error(`Duplicate diagram id: ${diagram.id}`);
       diagrams.add(diagram.id); text(diagram.title, 'diagram title'); text(diagram.mermaid, 'Mermaid diagram');
       evidence(context, diagram.evidence);
+      if (content.schemaVersion === 2 || diagram.question !== undefined) {
+        text(diagram.question, 'diagram question');
+        const question = diagram.question.trim().toLowerCase();
+        if (questions.has(question)) throw Error(`Duplicate diagram question: ${diagram.question}`);
+        questions.add(question);
+      }
+      if (diagram.flowId !== undefined) analysisLinks(context, [diagram.flowId], 'flow');
       if (/<\s*script|\bon\w+\s*=|(?:javascript|data):|^\s*click\s|%%\s*\{/im.test(diagram.mermaid)) {
         throw Error(`Unsafe Mermaid diagram: ${diagram.id}`);
       }
     }
   }
-  for (const entry of content.coverage) {
+  for (const entry of content.coverage || []) {
     if (entry.status === 'generated' && !content.documents.some(doc => doc.family === entry.family)) throw Error(`Generated coverage family ${entry.family} requires a document`);
   }
   if (content.gaps !== undefined) array(content.gaps, 'gaps');
@@ -151,16 +182,32 @@ function markdownSources(context, ids) {
   }).join(' · ');
 }
 const labelBasis = basis => basis[0].toUpperCase() + basis.slice(1);
-function documentMarkdown(context, doc) {
-  const parts = [`# ${doc.title}`, `Document family: ${familyTitles[doc.family]}`];
+function documentMarkdown(context, doc, { includeDiagrams = true } = {}) {
+  const parts = [`# ${doc.title}`, `Document family: ${familyTitle(doc.family)}`];
   for (const section of doc.sections) parts.push(`## ${section.heading}\n\n**${labelBasis(section.basis)}**\n\n${section.markdown}\n\nSources: ${markdownSources(context, section.evidence)}`);
-  for (const diagram of doc.diagrams || []) parts.push(`## ${diagram.title}\n\n` + '```mermaid\n' + diagram.mermaid + '\n```\n\nSources: ' + markdownSources(context, diagram.evidence));
+  if (includeDiagrams) for (const diagram of doc.diagrams || []) parts.push(`## ${diagram.title}\n\n${diagram.question || `What does ${diagram.title} show?`}\n\n` + '```mermaid\n' + diagram.mermaid + '\n```\n\nSources: ' + markdownSources(context, diagram.evidence));
   return parts.join('\n\n') + '\n';
+}
+
+function overviewFor(context, content) {
+  if (content.schemaVersion === 2) return content.overview;
+  return {
+    purpose: { markdown: content.summary, basis: 'observed', evidence: content.summaryEvidence },
+    reviewFocus: (context.analysis?.topics || []).flatMap(topic => (topic.reviewFocus || []).map(item => ({ markdown: item.text, basis: 'observed', evidence: item.evidenceIds }))),
+    extensionContext: (context.analysis?.topics || []).flatMap(topic => (topic.extensionPoints || []).map(item => ({ markdown: item.text, basis: item.basis || 'proposed', evidence: item.evidenceIds }))),
+  };
+}
+function claimHtml(context, claim) {
+  return `<div class="overview-claim"><span class="basis ${claim.basis}">${labelBasis(claim.basis)}</span>${renderMarkdown(claim.markdown)}<details class="evidence"><summary>Source evidence</summary><p class="sources">${citations(context, claim.evidence)}</p></details></div>`;
+}
+function claimMarkdown(context, claim) {
+  return `**${labelBasis(claim.basis)}** — ${claim.markdown}\n\nSources: ${markdownSources(context, claim.evidence)}`;
 }
 
 export async function renderDesign(context, content, dir) {
   validateDesign(context, content);
   const css = await readFile(new URL('../assets/design.css', import.meta.url), 'utf8');
+  const overview = overviewFor(context, content), coverage = content.coverage || [];
   const diagramSvgs = new Map();
   const sourceDiagrams = content.documents.flatMap(doc => doc.diagrams || []);
   // Render before writing: invalid diagrams do not replace an existing valid artifact.
@@ -177,37 +224,43 @@ export async function renderDesign(context, content, dir) {
   await mkdir(dir, { recursive: true });
   const outputs = ['index.html', 'design.json'];
   const nav = content.documents.map(doc => `<li><a href="#${doc.id}">${escapeHtml(doc.title)}</a></li>`).join('');
-  const rows = FAMILIES.map(family => {
-    const entry = content.coverage.find(item => item.family === family);
-    return `<tr><th scope="row">${escapeHtml(familyTitles[family])}</th><td><span class="status ${entry.status}">${escapeHtml(entry.status)}</span></td><td>${escapeHtml(entry.reason)}${entry.evidence.length ? `<div class="sources">${citations(context, entry.evidence)}</div>` : ''}</td></tr>`;
+  const rows = coverage.map(entry => {
+    return `<tr><th scope="row">${escapeHtml(familyTitle(entry.family))}</th><td><span class="status ${entry.status}">${escapeHtml(entry.status)}</span></td><td>${escapeHtml(entry.reason)}${entry.evidence.length ? `<div class="sources">${citations(context, entry.evidence)}</div>` : ''}</td></tr>`;
   }).join('');
-  const articles = [];
+  const articles = [], featuredDiagrams = [];
   for (const doc of content.documents) {
     const md = documentMarkdown(context, doc);
     await writeFile(path.join(dir, `${doc.id}.md`), md); outputs.push(`${doc.id}.md`);
     const sections = doc.sections.map(section => `<section><h3>${escapeHtml(section.heading)}</h3><p class="basis ${section.basis}">${labelBasis(section.basis)}</p>${renderMarkdown(section.markdown)}<p class="sources">Sources: ${citations(context, section.evidence)}</p></section>`).join('');
-    const diagrams = [];
+    const diagramLinks = [];
     for (const diagram of doc.diagrams || []) {
       const svg = diagramSvgs.get(diagram.id);
       await writeFile(path.join(dir, `${diagram.id}.mmd`), diagram.mermaid + '\n');
       await writeFile(path.join(dir, `${diagram.id}.svg`), svg);
       outputs.push(`${diagram.id}.mmd`, `${diagram.id}.svg`);
-      diagrams.push(`<figure id="diagram-${diagram.id}"><figcaption>${escapeHtml(diagram.title)}</figcaption><div class="diagram" role="img" aria-label="${escapeHtml(diagram.title)}">${svg}</div><details><summary>Mermaid source</summary><pre>${escapeHtml(diagram.mermaid)}</pre></details><p class="sources">${citations(context, diagram.evidence)}</p></figure>`);
+      const question = diagram.question || `What does ${diagram.title} show?`;
+      featuredDiagrams.push(`<figure id="diagram-${diagram.id}"><figcaption>${escapeHtml(diagram.title)} · <a href="#${doc.id}">${escapeHtml(doc.title)}</a></figcaption><h3 class="diagram-question">${escapeHtml(question)}</h3><div class="diagram" role="img" aria-label="${escapeHtml(question)}">${svg}</div><details class="evidence"><summary>Diagram source and evidence</summary><pre>${escapeHtml(diagram.mermaid)}</pre><p class="sources">${citations(context, diagram.evidence)}</p></details></figure>`);
+      diagramLinks.push(`<li><a href="#diagram-${diagram.id}">${escapeHtml(question)}</a></li>`);
     }
-    articles.push(`<article id="${doc.id}"><p class="eyebrow">${escapeHtml(familyTitles[doc.family])}</p><h2>${escapeHtml(doc.title)}</h2>${sections}${diagrams.join('')}</article>`);
+    articles.push(`<article id="${doc.id}"><p class="eyebrow">${escapeHtml(familyTitle(doc.family))}</p><h2>${escapeHtml(doc.title)}</h2>${diagramLinks.length ? `<ul class="diagram-links">${diagramLinks.join('')}</ul>` : ''}<details class="document-details"><summary>Read detailed explanation${doc.sections.length ? ` (${doc.sections.length} section${doc.sections.length === 1 ? '' : 's'})` : ''}</summary>${sections}</details></article>`);
   }
+  const overviewHtml = `<section id="overview"><h2>Purpose</h2>${claimHtml(context, overview.purpose)}${overview.reviewFocus.length ? `<div class="overview-group"><h3>Review focus</h3>${overview.reviewFocus.map(claim => claimHtml(context, claim)).join('')}</div>` : ''}${overview.extensionContext.length ? `<div class="overview-group"><h3>Where to extend</h3>${overview.extensionContext.map(claim => claimHtml(context, claim)).join('')}</div>` : ''}</section>`;
+  const diagramsHtml = featuredDiagrams.length ? `<section id="key-diagrams"><h2>Questions the diagrams answer</h2>${featuredDiagrams.join('')}</section>` : '';
+  const coverageHtml = coverage.length ? `<details id="coverage" class="coverage"><summary>Document selection and applicability (${coverage.length} considered)</summary><div class="table-scroll"><table><thead><tr><th>Document family</th><th>Status</th><th>Reason and evidence</th></tr></thead><tbody>${rows}</tbody></table></div></details>` : '';
   const gaps = content.gaps?.length ? `<section id="open-questions"><h2>Open questions</h2><ul>${content.gaps.map(gap => `<li>${escapeHtml(gap.question)}${gap.evidence.length ? `<div class="sources">${citations(context, gap.evidence)}</div>` : ''}</li>`).join('')}</ul></section>` : '';
-  const limits = context.limitations.length ? `<section><h2>Source coverage limitations</h2><ul>${context.limitations.map(limit => `<li>${escapeHtml(limit)}</li>`).join('')}</ul></section>` : '';
-  const body = `<a class="skip" href="#main">Skip to documents</a><header><p class="eyebrow">Code Unpacked · Reverse design</p><h1>${escapeHtml(content.title)}</h1><p>${escapeHtml(content.summary)}</p><p class="sources">${citations(context, content.summaryEvidence)}</p><p class="revision">Source revision <code>${escapeHtml(context.source.head)}</code>${context.source.base ? ` · Base <code>${escapeHtml(context.source.base)}</code>` : ''}</p></header><div class="layout"><nav aria-label="Design documents"><strong>Documents</strong><ul><li><a href="#coverage">Coverage and applicability</a></li>${nav}${content.gaps?.length ? '<li><a href="#open-questions">Open questions</a></li>' : ''}</ul><p class="muted">Observed = supported behavior.<br>Inferred = reconstructed intent.<br>Proposed = suggested change.</p></nav><main id="main"><section id="coverage"><h2>Coverage and applicability</h2><p>Every document family is accounted for. Missing evidence is recorded explicitly.</p><div class="table-scroll"><table><thead><tr><th>Document family</th><th>Status</th><th>Reason and evidence</th></tr></thead><tbody>${rows}</tbody></table></div></section>${articles.join('')}${gaps}${limits}</main></div>`;
+  const limits = context.limitations.length ? `<details class="coverage"><summary>Source coverage limitations</summary><ul>${context.limitations.map(limit => `<li>${escapeHtml(limit)}</li>`).join('')}</ul></details>` : '';
+  const body = `<a class="skip" href="#main">Skip to overview</a><header><p class="eyebrow">Code Unpacked · Reverse design</p><h1>${escapeHtml(content.title)}</h1><p class="revision">Source revision <code>${escapeHtml(context.source.head)}</code>${context.source.base ? ` · Base <code>${escapeHtml(context.source.base)}</code>` : ''}</p></header><div class="layout"><nav aria-label="Design documents"><strong>Explore</strong><ul><li><a href="#overview">Purpose and review focus</a></li>${featuredDiagrams.length ? '<li><a href="#key-diagrams">Key diagrams</a></li>' : ''}${nav}${content.gaps?.length ? '<li><a href="#open-questions">Open questions</a></li>' : ''}${coverage.length ? '<li><a href="#coverage">Document selection</a></li>' : ''}</ul><p class="muted">Observed = supported behavior.<br>Inferred = reconstructed intent.<br>Proposed = suggested change.</p></nav><main id="main">${overviewHtml}${diagramsHtml}${articles.join('')}${gaps}${coverageHtml}${limits}</main></div>`;
   await writeFile(path.join(dir, 'index.html'), renderShell({ title: content.title, body, css }));
   await writeJson(path.join(dir, 'design.json'), content);
-  const coverageMarkdown = `### Coverage\n\n| Document family | Status | Reason |\n| --- | --- | --- |\n${FAMILIES.map(family => { const entry = content.coverage.find(item => item.family === family); return `| ${familyTitles[family]} | ${entry.status} | ${entry.reason.replaceAll('|', '\\|').replaceAll('\n', ' ')} |`; }).join('\n')}`;
-  const commentDocs = content.documents.map(doc => documentMarkdown(context, doc).replace(/^(#{1,5}) /gm, '#$1 '));
+  const coverageMarkdown = coverage.length ? `<details><summary>Document selection and applicability</summary>\n\n| Document family | Status | Reason |\n| --- | --- | --- |\n${coverage.map(entry => `| ${familyTitle(entry.family)} | ${entry.status} | ${entry.reason.replaceAll('|', '\\|').replaceAll('\n', ' ')} |`).join('\n')}\n\n</details>` : '';
+  const commentDocs = content.documents.map(doc => `<details><summary>${escapeHtml(doc.title)}</summary>\n\n${documentMarkdown(context, doc, { includeDiagrams: false }).replace(/^(#{1,5}) /gm, '#$1 ')}\n</details>`);
+  const overviewMarkdown = `### Purpose\n\n${claimMarkdown(context, overview.purpose)}${overview.reviewFocus.length ? `\n\n### Review focus\n\n${overview.reviewFocus.map(claim => claimMarkdown(context, claim)).join('\n\n')}` : ''}${overview.extensionContext.length ? `\n\n### Where to extend\n\n${overview.extensionContext.map(claim => claimMarkdown(context, claim)).join('\n\n')}` : ''}`;
+  const diagramsMarkdown = sourceDiagrams.length ? '\n\n### Key diagrams\n\n' + sourceDiagrams.map(diagram => `#### ${diagram.question || `What does ${diagram.title} show?`}\n\n` + '```mermaid\n' + diagram.mermaid + '\n```\n\nSources: ' + markdownSources(context, diagram.evidence)).join('\n\n') : '';
   const openQuestions = content.gaps?.length ? `\n\n### Open questions\n\n${content.gaps.map(gap => `- ${gap.question}${gap.evidence.length ? ` — ${markdownSources(context, gap.evidence)}` : ''}`).join('\n')}` : '';
   return finishArtifact({
-    dir, skill: 'reverse-design', context, outputs, summary: content.summary,
-    markdown: `Sources: ${markdownSources(context, content.summaryEvidence)}\n\n${coverageMarkdown}\n\n${commentDocs.join('\n\n')}${openQuestions}`,
-    limitations: content.coverage.filter(entry => entry.status === 'insufficient-evidence').map(entry => `${familyTitles[entry.family]}: ${entry.reason}`),
+    dir, skill: 'reverse-design', context, outputs, summary: content.title,
+    markdown: `${overviewMarkdown}${diagramsMarkdown}\n\n${commentDocs.join('\n\n')}${openQuestions}${coverageMarkdown ? `\n\n${coverageMarkdown}` : ''}`,
+    limitations: coverage.filter(entry => entry.status === 'insufficient-evidence').map(entry => `${familyTitle(entry.family)}: ${entry.reason}`),
   });
 }
 

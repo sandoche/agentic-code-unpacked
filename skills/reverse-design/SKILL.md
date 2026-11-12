@@ -2,7 +2,7 @@
 name: reverse-design
 description: Reconstruct source-backed requirements, architecture, data, interaction, and decision documents for a pull request, branch, codebase, or selected code.
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
 ---
 
 # Reverse Design
@@ -33,9 +33,13 @@ snapshot.
    missing. Do not claim graph evidence when unavailable.
 2. Inspect changed code and enough surrounding source to establish the behavior.
    Write content matching [the schema](references/content.schema.json). Cite the
-   context's evidence IDs for every section, diagram, and generated family.
-3. Account for all eleven document families in `coverage`. Generate the relevant
-   ones; give a concrete reason for `not-applicable` or `insufficient-evidence`.
+   context's evidence IDs for every claim, section, and diagram. Reuse shared
+   [review analysis](../code-unpacked-core/references/analysis.md) when available;
+   add relevant unchanged callers, guards, and tests before drawing conclusions.
+3. Select documents that answer useful questions about this change. Start with a
+   concise purpose, review focus, and extension context. No document family is
+   mandatory. Optional `coverage` records only the applicability decisions worth
+   preserving; do not manufacture an exhaustive checklist.
 4. Render the validated content with:
 
    ```text
@@ -48,8 +52,8 @@ snapshot.
    `.code-unpacked/docs/<name>/reverse-design/`. Whole-codebase output uses
    `docs/codebase`.
 
-The LLM authors explanations and Mermaid; scripts validate citations, document
-coverage, filenames and content, render diagrams and HTML, and prepare the manifest
+The LLM authors explanations and Mermaid; scripts validate citations, optional
+applicability metadata, filenames and content, render diagrams and HTML, and prepare the manifest
 and PR comment. Node and the suite dependencies are required. Diagrams additionally
 need Playwright Chromium; use the suite's browser installation instructions.
 
@@ -57,7 +61,7 @@ need Playwright Chromium; use the suite's browser installation instructions.
 
 | Family ID | Evidence that makes it useful |
 | --- | --- |
-| `requirements` | Observable behavior and constraints. Always generate a concise overview, including explicit unknowns. |
+| `requirements` | Product behavior and constraints need a requirements document beyond the concise overview. |
 | `stories` | Identifiable users and outcomes support stories with observable acceptance criteria. |
 | `user-flows` | An interaction has meaningful steps, branches, or failure paths. |
 | `c4` | Code establishes system, service, runtime, or component boundaries. Use only the C4 levels supported by evidence. |
@@ -68,6 +72,34 @@ need Playwright Chromium; use the suite's browser installation instructions.
 | `deployment` | Runtime or deployment configuration establishes topology. |
 | `threat-model` | Trust boundaries, sensitive data, or privileged operations support concrete risks. |
 | `decisions` | Existing ADRs record decisions, or the implementation supports a clearly labeled reconstructed decision note. |
+
+These are suggestions, not required categories. Use a custom kebab-case `family`
+when another document is more useful. A tiny change may need only the overview.
+Avoid padding the bundle with documents that repeat the same facts.
+
+## Author the explanation
+
+New content uses `schemaVersion: 2`, `title`, `overview`, and selected `documents`.
+The overview has `purpose`, `reviewFocus`, and `extensionContext`; each entry is a
+claim with `markdown`, `basis`, and source `evidence`. Purpose is one claim; the
+other fields are nonempty arrays of claims. Explain what the code does, the order
+in which to review it, and which seam to change when extending it. Keep these
+claims short enough to scan before opening a document.
+
+Put the most useful diagrams first by ordering their documents and diagrams.
+Every v2 diagram includes the specific `question` it answers. Prefer separate
+sequence diagrams for distinct flows, such as success, authorization failure, and
+retry; do not force all behavior into one large interaction. Questions must be
+distinct. A diagram-only document may have `sections: []`.
+
+When shared analysis exists, use `topicIds` and `flowIds` on documents and `flowId`
+on diagrams to link them to its topics and flows. These optional IDs are validated
+against `context.analysis`. Keep inferred relationships labeled in the surrounding
+explanation, and do not present a graph edge as a runtime guarantee.
+
+Schema 1 content with `summary` and `summaryEvidence` remains supported. Its summary
+becomes the concise purpose; shared review focus and extension points are reused
+when available. Legacy coverage tables remain available in collapsed metadata.
 
 ## Keep evidence and interpretation distinct
 
@@ -97,7 +129,12 @@ The bundle contains `index.html`, `design.json`, one Markdown file per document,
 Mermaid `.mmd` and rendered `.svg` files for diagrams, `manifest.json`, and
 `comment.md`. The HTML contains its styling and diagrams and works offline.
 
-For PRs, `comment.md` includes the documents and Mermaid directly, plus the HTML
+The overview and question-led diagrams appear first. Detailed explanations,
+diagram sources, applicability metadata, and coverage limitations are expandable.
+The HTML does not require a network connection or a live diagram service.
+
+For PRs, `comment.md` leads with the overview and key Mermaid diagrams, then places
+detailed documents and applicability metadata in expandable sections, plus the HTML
 attachment checklist. Follow core delivery handling: prepare a draft unless posting
 was requested. Never insert nonexistent hosted links. If the user authorized actual
 posting, attach/share artifacts through a supported delivery route before posting
@@ -106,5 +143,6 @@ the final comment.
 ## Verification
 
 Run `node --test skills/reverse-design/tests/reverse-design.test.mjs` from the suite
-root. Tests cover evidence and applicability validation, safe Markdown, deterministic
-artifacts, offline browser navigation, Mermaid validation, and inline PR documents.
+root. Tests cover selected-document and evidence validation, schema 1 compatibility,
+safe Markdown, overview ordering, collapsed detail, offline browser navigation,
+focused Mermaid questions, shared browser use, and inline PR documents.

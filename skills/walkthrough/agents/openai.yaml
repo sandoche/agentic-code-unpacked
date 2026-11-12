@@ -3,4 +3,4 @@ interface:
   short_description: "Turn code changes into guided HTML and silent video"
   default_prompt: "Use $walkthrough to explain this pull request in a source-linked HTML walkthrough."
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"

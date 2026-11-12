@@ -4,7 +4,7 @@ import { readFile, writeFile, mkdir, stat, realpath } from 'node:fs/promises';
 import { execFile, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
 
-export const VERSION='0.1.0';
+export const VERSION='0.2.0';
 const exec=promisify(execFile);
 export const hash=value=>createHash('sha256').update(value).digest('hex');
 export const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -96,9 +96,11 @@ function makeEvidence(files,source){
   }return evidence;
 }
 export function validateContext(context){
-  if(context?.schemaVersion!==1||!context.target||!context.source||!Array.isArray(context.files)||!Array.isArray(context.evidence)||!Array.isArray(context.limitations))throw Error('Invalid context schemaVersion or required fields');
+  if(![1,2].includes(context?.schemaVersion)||!context.target||!context.source||!Array.isArray(context.files)||!Array.isArray(context.evidence)||!Array.isArray(context.limitations))throw Error('Invalid context schemaVersion or required fields');
   const files=new Set();for(const file of context.files){if(!file.id||files.has(file.id)||!file.path)throw Error('Invalid/duplicate file');files.add(file.id);}
   const ids=new Set();for(const e of context.evidence){if(!e.id||ids.has(e.id)||!files.has(e.fileId))throw Error('Invalid/duplicate evidence reference');ids.add(e.id);if(e.url&&!/^https:\/\/github\.com\//.test(e.url))throw Error('Evidence URL must use HTTPS GitHub');if(!Number.isInteger(e.startLine)||e.startLine<1||!Number.isInteger(e.endLine)||e.endLine<e.startLine)throw Error('Invalid evidence range');const file=context.files.find(f=>f.id===e.fileId);const content=e.side==='base'?file.baseContent:file.content;if(typeof content!=='string'||e.endLine>content.replace(/\n$/,'').split('\n').length)throw Error('Evidence range outside source');}
+  const symbolIds=new Set();for(const symbol of context.symbols||[]){if(!symbol.id||symbolIds.has(symbol.id)||!files.has(symbol.fileId)||!symbol.name)throw Error('Invalid/duplicate symbol');symbolIds.add(symbol.id);assertEvidence(context,symbol.evidenceIds);if(!symbol.evidenceIds.every(id=>context.evidence.find(e=>e.id===id)?.fileId===symbol.fileId))throw Error('Symbol evidence does not match file');}
+  const edges=new Set();for(const edge of context.relationships||[]){if(!edge.id||edges.has(edge.id)||!files.has(edge.fromFileId)||!files.has(edge.toFileId))throw Error('Invalid/duplicate relationship');edges.add(edge.id);assertEvidence(context,edge.evidenceIds);if(edge.fromSymbolId&&!symbolIds.has(edge.fromSymbolId)||edge.toSymbolId&&!symbolIds.has(edge.toSymbolId))throw Error('Unknown relationship symbol');if(edge.provenance==='source-ast'&&![edge.fromFileId,edge.toFileId].every(fileId=>edge.evidenceIds.some(id=>context.evidence.find(e=>e.id===id)?.fileId===fileId)))throw Error('Relationship evidence needs both endpoints');}
   return context;
 }
 export function resolveEvidence(context,id){
@@ -123,10 +125,17 @@ export async function captureLocal(target,root){
     files=parseDiff(await git(root,['diff','--no-ext-diff','--no-textconv','--find-renames',source.base,tip,'--']));
     await hydrateGitFiles(root,files,source);
   }else{
-    const selectors=target.kind==='docs'?target.files||[]:(await git(root,['ls-files','-z'])).split('\0').filter(Boolean);
+    const selectors=target.kind==='docs'?target.files||[]:(await git(root,['ls-files','--cached','--others','--exclude-standard','-z'])).split('\0').filter(Boolean);
     for(const selector of selectors){const match=/^(.*?)(?::(\d+)(?:-(\d+))?)?$/.exec(selector);const relative=match[1].replace(/\\/g,'/');if(excluded(relative)){limitations.push(`Excluded ${relative}`);continue;}
-      const absolute=await checkedPath(root,relative);if(!(await stat(absolute)).isFile())throw Error(`Not a file: ${relative}`);const bytes=await readFile(absolute);const file={path:relative,status:'snapshot',hunks:[],sha256:hash(bytes)};
-      if(bytes.includes(0)){file.binary=true;file.omission='Binary source';}else if(bytes.length>512000||metadataOnly(relative))file.omission='Large/generated source metadata only';else{file.content=redact(bytes.toString('utf8'));if(match[2]){const start=Number(match[2]),end=Number(match[3]||match[2]);if(start<1||end<start||end>file.content.replace(/\n$/,'').split('\n').length)throw Error(`Invalid selected range: ${selector}`);file.selectedRange=[start,end];}}
+      let absolute;try{absolute=await checkedPath(root,relative);}catch(error){
+        if(target.kind!=='codebase'||error.code!=='ENOENT')throw error;
+        const file={path:relative,oldPath:relative,status:'deleted',hunks:[]};
+        const prior=await git(root,['show',`${head}:${relative}`]);source.base=head;
+        if(prior.includes('\0')||Buffer.byteLength(prior)>512000||metadataOnly(relative))file.omission='Deleted binary/large/generated source metadata only';else file.baseContent=redact(prior);
+        files.push(file);continue;
+      }
+      if(!(await stat(absolute)).isFile())throw Error(`Not a file: ${relative}`);const bytes=await readFile(absolute);const file={path:relative,status:'snapshot',hunks:[],sha256:hash(bytes)};
+      if(bytes.includes(0)){file.binary=true;file.omission='Binary source';}else if(bytes.length>512000||metadataOnly(relative))file.omission='Large/generated source metadata only';else{file.content=redact(bytes.toString('utf8'));if(match[2]){const start=Number(match[2]),end=Number(match[3]||match[2]);if(start<1||end<start||end>file.content.replace(/\n$/,'').split('\n').length)throw Error(`Invalid selected range: ${selector}`);file.selectedRange=[start,end];file.content="\n".repeat(start-1)+file.content.split("\n").slice(start-1,end).join("\n");}}
       files.push(file);
     }
     if(target.textFile){const text=await readFile(await checkedPath(root,target.textFile),'utf8');files.push({path:'selected-code.txt',status:'snapshot',hunks:[],content:redact(text)});}
@@ -143,6 +152,33 @@ export async function capturePinnedPr(target,metadata,root){
   context.evidence=makeEvidence(context.files,context.source);context.provenance={method:'pinned-git-with-recorded-pr-metadata',graph:'not-supplied'};
   context.limitations.push('PR metadata is a recorded snapshot; this run does not assert that it remains the latest PR revision.');
   return validateContext(context);
+}
+/** Add explicitly requested unchanged source at the captured revision, never checkout files. */
+export async function addContextFiles(original,root,paths){
+  const context=structuredClone(original),added=[];
+  for(const input of [...new Set(paths)]){
+    const relative=input.replace(/\\/g,'/');
+    if(!relative||relative.startsWith('/')||relative.split('/').some(part=>part==='..')||/^[a-z]:/i.test(relative))throw Error('Context path escapes repository');
+    if(context.files.some(f=>f.path===relative))continue;
+    if(excluded(relative)||metadataOnly(relative)){context.limitations.push(`${relative}: contextual source excluded`);continue;}
+    const file={path:relative,oldPath:relative,status:'context',role:'context',hunks:[]};
+    if(context.source.kind==='git')await hydrateGitFiles(root,[file],{head:context.source.head});
+    else{const bytes=await readFile(await checkedPath(root,relative));if(bytes.includes(0)||bytes.length>512000)file.omission='Binary or large context source';else file.content=redact(bytes.toString('utf8'));}
+    if(typeof file.content!=='string'){context.limitations.push(`${relative}: contextual source unavailable`);continue;}
+    file.sha256=hash(file.content);added.push(file);
+  }
+  context.evidence.push(...makeEvidence(added,context.source));context.files.push(...added);return validateContext(context);
+}
+export async function expandImports(context,root,{limit=48}={}){
+  if(!['pr','branch'].includes(context.target.kind))return context;
+  const inventory=(await git(root,['ls-tree','-r','--name-only',context.source.head])).split('\n');const requested=new Set();
+  for(const file of context.files.filter(f=>f.role!=='context')){
+    for(const match of (file.content||'').matchAll(/(?:\bfrom\s*|\brequire\s*\(\s*|\bimport\s*)['"](\.[^'"]+)['"]/g)){
+      const base=path.posix.normalize(path.posix.join(path.posix.dirname(file.path),match[1]));
+      const found=[base,...['.js','.jsx','.ts','.tsx','/index.js','/index.jsx','/index.ts'].map(ext=>base+ext)].find(name=>inventory.includes(name));if(found)requested.add(found);
+    }
+  }
+  const missing=[...requested].filter(p=>!context.files.some(f=>f.path===p)).sort();const result=await addContextFiles(context,root,missing.slice(0,limit));if(missing.length>limit)result.limitations.push(`Import context limited to ${limit} files; ${missing.length-limit} omitted`);return result;
 }
 export async function capturePr(target,{root,loadJson}={}){
   const api=loadJson|| (async endpoint=>{
@@ -179,6 +215,7 @@ export function renderShell({title,body,css='',script='',data,lang='en'}){
 }
 export async function readJson(file){return JSON.parse(await readFile(file,'utf8'));}
 export async function writeJson(file,value){await mkdir(path.dirname(file),{recursive:true});await writeFile(file,JSON.stringify(value,null,2)+'\n');}
+export const deliveryArtifacts=outputs=>outputs.filter(file=>!file.includes('/')&&!file.includes('\\')&&/\.(?:html|png|mp4|zip)$/i.test(file));
 export function makeComment({skill,context,summary='',attachments=[],markdown=''}){
   return `<!-- code-unpacked:${skill} -->\n## Code Unpacked · ${skill}\n\n${summary}\n\nSource revision: \`${context.source.head}\`\n\n${markdown}${markdown?'\n\n':''}${attachments.length?'Local attachments to upload before posting:\n\n'+attachments.map(file=>`- \`${file}\``).join('\n')+'\n\nDownload the HTML attachment and open it locally.\n\n':''}${context.limitations?.length?'<details><summary>Source coverage limitations</summary>\n\n'+context.limitations.map(x=>`- ${redact(x)}`).join('\n')+'\n\n</details>\n':''}`;
 }
@@ -191,7 +228,7 @@ export async function writeManifest(dir,{skill,context,outputs,status='complete'
   const manifest={schemaVersion:1,skill,version:VERSION,source:context.source,target:context.target,inputs:{contextHash:hash(JSON.stringify(context))},artifacts,status,limitations:[...(context.limitations||[]),...limitations],delivery};await writeJson(path.join(dir,'manifest.json'),manifest);return manifest;
 }
 export async function finishArtifact({dir,skill,context,outputs,summary='',markdown='',status='complete',limitations=[]}){
-  await mkdir(dir,{recursive:true});await writeJson(path.join(dir,'comment-content.json'),{summary,markdown});await writeFile(path.join(dir,'comment.md'),makeComment({skill,context,summary,markdown,attachments:outputs.filter(f=>/\.(?:html|png|mp4|zip)$/.test(f))}));return writeManifest(dir,{skill,context,outputs:[...outputs,'comment.md','comment-content.json'],status,limitations});
+  await mkdir(dir,{recursive:true});await writeJson(path.join(dir,'comment-content.json'),{summary,markdown});await writeFile(path.join(dir,'comment.md'),makeComment({skill,context,summary,markdown,attachments:deliveryArtifacts(outputs)}));return writeManifest(dir,{skill,context,outputs:[...outputs,'comment.md','comment-content.json'],status,limitations});
 }
 export async function loadBrowser(){let playwright;try{playwright=await import('playwright');}catch{throw Error('Playwright is required. Install suite dependencies, then run: npx playwright install chromium');}try{return await playwright.chromium.launch({headless:true});}catch(error){try{return await playwright.chromium.launch({headless:true,channel:'chrome'});}catch{}throw Error(`Chromium is required; run npx playwright install chromium. ${error.message}`);}}
 export async function renderMermaid(code,{browser:sharedBrowser}={}){
