@@ -45,6 +45,9 @@ try {
     for (const skill of skills[0] === '*' ? SKILLS : skills) {
       await readFile(path.join(target, skill, 'SKILL.md'));
       await readFile(path.join(target, skill, 'runtime', 'scripts', 'core.mjs'));
+      for (const file of await readdir(path.join(target, skill), { recursive: true })) {
+        assert.doesNotMatch(file, /(?:^|[\\/])src(?:[\\/]|$)|\.(?:mts|cts|tsx?|map)$/i, `Development source leaked into installed ${skill}: ${file}`);
+      }
     }
     console.log(`Installed ${label}`);
     return target;

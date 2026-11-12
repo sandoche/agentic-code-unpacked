@@ -1,16 +1,17 @@
 import path from 'node:path';
 import { readdir, readFile, mkdir, writeFile, rm } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
+import { syncCompiledRuntime } from './compile-runtime.mjs';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const PRESENTATION_SKILLS = ['walkthrough', 'reverse-design', 'code-map', 'review-quiz', 'xkcd'];
 export const SKILLS = [...PRESENTATION_SKILLS, 'code-unpacked'];
 
-export async function skillFiles(directory) {
+export async function skillFiles(directory, { excludeSource = false } = {}) {
   const output = [];
   async function visit(relative = '') {
     for (const entry of await readdir(path.join(directory, relative), { withFileTypes: true })) {
-      if (['node_modules', 'tests', '.git', '.code-unpacked', '.gitkeep'].includes(entry.name)) continue;
+      if (['node_modules', 'tests', '.git', '.code-unpacked', '.gitkeep'].includes(entry.name) || excludeSource && entry.name === 'src') continue;
       if (entry.isSymbolicLink()) throw Error(`Skill bundle contains a symlink: ${entry.name}`);
       const name = path.posix.join(relative, entry.name);
       if (entry.isDirectory()) await visit(name);
@@ -39,8 +40,9 @@ async function syncGenerated(target, files, check) {
 }
 
 export async function buildSkills({ check = false } = {}) {
+  await syncCompiledRuntime(PRESENTATION_SKILLS, { check });
   const source = path.join(ROOT, 'packages', 'core');
-  const runtime = new Map(await Promise.all((await skillFiles(source)).map(async name => [name, await readFile(path.join(source, name))])));
+  const runtime = new Map(await Promise.all((await skillFiles(source, { excludeSource: true })).map(async name => [name, await readFile(path.join(source, name))])));
   for (const skill of SKILLS) await syncGenerated(path.join(ROOT, 'skills', skill, 'runtime'), runtime, check);
 
   const presentations = new Map();

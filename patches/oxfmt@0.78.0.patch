@@ -1,0 +1,13 @@
+diff --git a/dist/cli.js b/dist/cli.js
+index ca9c0571492f9918f4ce201bfefe1adc36f540d9..c4449b781e43d785909fdd03b4121f881cbf812d 100644
+--- a/dist/cli.js
++++ b/dist/cli.js	
+@@ -12,6 +12,8 @@ async function initExternalServices(numThreads) {
+ async function getPool() {
+ 	if (poolSize === null) throw new Error("External services are not initialized");
+ 	pool ??= new Tinypool({
++		// The native Astro parser can crash during worker-thread teardown on Windows.
++		runtime: process.platform === "win32" ? "child_process" : "worker_threads",
+ 		filename: new URL("./cli-worker.js", import.meta.url).href,
+ 		minThreads: 1,
+ 		maxThreads: poolSize,

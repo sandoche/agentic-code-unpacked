@@ -5,3 +5,6 @@ packages:
 allowBuilds:
   fsevents: true
   lefthook: true
+
+patchedDependencies:
+  oxfmt@0.78.0: patches/oxfmt@0.78.0.patch

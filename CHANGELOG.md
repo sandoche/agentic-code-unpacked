@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Migrated the shared runtime, presentation renderers, and browser interactions to TypeScript, compiled with the native TypeScript 7 compiler.
+- Added strict type checking and type-aware lint rules that reject `any`, unsafe untyped operations, and suppression directives.
+- Kept installed JavaScript commands and supported artifact schemas compatible, with source-free skill bundles and read-only generated-file checks.
+- Added compiler/lint regression checks; verified Node.js 22.23.4 and 26.13.1 compatibility.
+- Isolated Astro formatter workers in separate processes on Windows to avoid an intermittent native shutdown crash.
+
 ## 0.3.0 — 2026-11-12
 
 - Added source-backed architecture quiz questions with partial diagrams, alternative diagrams, and completed diagrams after submission.
