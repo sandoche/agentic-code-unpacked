@@ -9,8 +9,8 @@
     "check": "pnpm run lint && pnpm run typecheck && pnpm run format:check",
     "lint": "oxlint --deny-warnings",
     "typecheck": "astro check",
-    "format": "oxfmt",
-    "format:check": "oxfmt --check"
+    "format": "oxfmt --threads=1",
+    "format:check": "oxfmt --check --threads=1"
   },
   "dependencies": {
     "astro": "^7.4.8"

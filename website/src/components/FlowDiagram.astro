@@ -1,0 +1,24 @@
+---
+import type { DiagramContent } from "../lib/homepage-schema";
+interface Props {
+  diagram: DiagramContent;
+}
+const { diagram } = Astro.props;
+---
+
+<figure class="flow-diagram" aria-label={diagram.title}>
+  <figcaption>{diagram.title}</figcaption>
+  <ol class="flow-steps">
+    {diagram.steps.map((step, index) => (
+      <li>
+        <span>{step}</span>
+        {index < diagram.steps.length - 1 && (
+          <span class="flow-arrow" aria-hidden="true">
+            →
+          </span>
+        )}
+      </li>
+    ))}
+  </ol>
+  <p class="diagram-note">{diagram.note}</p>
+</figure>

@@ -1,0 +1,21 @@
+{
+  "scanned": "2026-11-12",
+  "findings": {
+    "fonts": "No existing system; Cobalt supplies Familjen Grotesk, IBM Plex Sans, and JetBrains Mono for code only.",
+    "palette": "No existing palette; adopt Cobalt tokens.",
+    "motion": "No existing motion library; native CSS and TypeScript.",
+    "framework": "Astro 7 with strict TypeScript.",
+    "content": "Merged homepage draft and v0.3.0 architecture quizzes."
+  },
+  "preserve": [
+    "Static Astro build",
+    "Hosted skill discovery",
+    "Human review audience",
+    "Install commands and researched claims"
+  ],
+  "introduce": [
+    "Cobalt visual system",
+    "Schema-validated front matter",
+    "Illustrative interactive previews"
+  ]
+}

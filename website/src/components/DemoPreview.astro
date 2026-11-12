@@ -1,0 +1,199 @@
+---
+import type { Demo, HomepageContent } from "../lib/homepage-schema";
+import SourceBlock from "./SourceBlock.astro";
+import FlowDiagram from "./FlowDiagram.astro";
+interface Props {
+  demo: Demo;
+  ui: HomepageContent["ui"];
+}
+const { demo, ui } = Astro.props;
+---
+
+<article
+  class="demo-panel"
+  id={`demo-${demo.id}`}
+  data-switch-panel
+  aria-labelledby={`demo-title-${demo.id}`}
+>
+  <header class="demo-heading">
+    <div>
+      <h3 id={`demo-title-${demo.id}`}>{demo.title}</h3>
+      <p>{demo.description}</p>
+    </div>
+    <code>{demo.command}</code>
+  </header>
+  {demo.kind === "walkthrough" && (
+    <div class="walkthrough" data-walkthrough>
+      <div class="walkthrough-steps">
+        {demo.steps.map((step) => (
+          <article class="walkthrough-step" data-step>
+            <div class="step-explanation">
+              <h4 data-step-title>{step.title}</h4>
+              <p>{step.explanation}</p>
+            </div>
+            <SourceBlock source={step.source} />
+          </article>
+        ))}
+      </div>
+      <div class="preview-controls enhanced-only">
+        <output data-step-status aria-live="polite"></output>
+        <div class="control-pair">
+          <button class="button" type="button" data-previous>
+            {ui.previous}
+          </button>
+          <button class="button" type="button" data-next>
+            {ui.next}
+          </button>
+        </div>
+      </div>
+    </div>
+  )}
+  {demo.kind === "reverse-design" && (
+    <div class="design-preview" data-switch>
+      <div class="case-tabs" data-switch-tabs aria-label={demo.label}>
+        {demo.cases.map((item) => (
+          <a class="choice" data-switch-tab href={`#case-${item.id}`} id={`case-tab-${item.id}`}>
+            {item.label}
+          </a>
+        ))}
+      </div>
+      <div data-switch-panels>
+        {demo.cases.map((item) => (
+          <section class="design-case" id={`case-${item.id}`} data-switch-panel>
+            <FlowDiagram diagram={item.diagram} />
+            <p class="case-explanation">{item.explanation}</p>
+          </section>
+        ))}
+      </div>
+    </div>
+  )}
+  {demo.kind === "code-map" && (
+    <div class="map-preview" data-switch>
+      <div class="map-nodes" data-switch-tabs aria-label={demo.label}>
+        {demo.nodes.map((node) => (
+          <div class="map-stop">
+            <a class="map-node" href={`#node-${node.id}`} id={`map-tab-${node.id}`} data-switch-tab>
+              <code>{node.name}</code>
+            </a>
+            {demo.edges
+              .filter((edge) => edge.from === node.id)
+              .map((edge) => (
+                <span class="map-edge" aria-hidden="true">
+                  {edge.label}
+                  <span>↓</span>
+                </span>
+              ))}
+          </div>
+        ))}
+      </div>
+      <div class="map-source" data-switch-panels>
+        {demo.nodes.map((node) => (
+          <section id={`node-${node.id}`} data-switch-panel>
+            <p class="map-role">{node.role}</p>
+            <SourceBlock source={node.source} />
+          </section>
+        ))}
+      </div>
+    </div>
+  )}
+  {demo.kind === "review-quiz" && (
+    <form
+      class="quiz-preview"
+      data-quiz
+      novalidate
+      data-required-label={ui.answerRequired}
+      data-correct-label={ui.correct}
+      data-incorrect-label={ui.incorrect}
+      data-score-label={ui.score}
+    >
+      {demo.questions.map((question, index) => (
+        <fieldset data-question data-correct-option={question.correctOptionId}>
+          <legend>
+            <span class="question-number">
+              {ui.question} {index + 1}
+            </span>
+            {question.prompt}
+          </legend>
+          {question.diagram && <FlowDiagram diagram={question.diagram} />}
+          <div class="quiz-options">
+            {question.options.map((option) => (
+              <label class="quiz-option">
+                <input
+                  type="radio"
+                  name={question.id}
+                  value={option.id}
+                  data-feedback={option.feedback}
+                  required
+                />
+                <span>{option.text}</span>
+              </label>
+            ))}
+          </div>
+          <p class="option-feedback" data-option-feedback aria-live="polite"></p>
+          <details class="quiz-explanation" data-explanation>
+            <summary>{ui.source}</summary>
+            <p>{question.explanation}</p>
+            {question.explanationDiagram && <FlowDiagram diagram={question.explanationDiagram} />}
+            <SourceBlock source={question.source} />
+          </details>
+        </fieldset>
+      ))}
+      <div class="quiz-controls enhanced-only">
+        <div class="control-pair">
+          <button class="button" type="submit" data-check>
+            {ui.check}
+          </button>
+          <button class="button" type="button" data-retake hidden>
+            {ui.retake}
+          </button>
+        </div>
+        <p role="status" aria-live="polite" data-quiz-status></p>
+      </div>
+    </form>
+  )}
+  {demo.kind === "xkcd" && (
+    <div class="comic-preview" data-comic>
+      <div class="comic-reading">
+        <div class="comic-viewport">
+          <img
+            class="comic-strip"
+            src={demo.image}
+            width={demo.imageWidth}
+            height={demo.imageHeight}
+            alt={demo.alt}
+            loading="lazy"
+            decoding="async"
+            data-comic-strip
+          />
+        </div>
+        <div class="comic-current enhanced-only">
+          <p data-comic-title>{demo.panels[0]?.title}</p>
+          <p data-comic-transcript>{demo.panels[0]?.transcript}</p>
+        </div>
+      </div>
+      <div class="preview-controls enhanced-only">
+        <output data-comic-status aria-live="polite"></output>
+        <div class="control-pair">
+          <button class="button" type="button" data-previous>
+            {ui.previousPanel}
+          </button>
+          <button class="button" type="button" data-next>
+            {ui.nextPanel}
+          </button>
+        </div>
+      </div>
+      <details class="comic-transcript">
+        <summary>{ui.transcript}</summary>
+        <ol>
+          {demo.panels.map((panel) => (
+            <li data-comic-panel data-title={panel.title} data-transcript={panel.transcript}>
+              <strong>{panel.title}</strong>
+              <p>{panel.transcript}</p>
+            </li>
+          ))}
+        </ol>
+        <SourceBlock source={demo.source} />
+      </details>
+    </div>
+  )}
+</article>

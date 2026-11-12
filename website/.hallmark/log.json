@@ -1,0 +1,44 @@
+[
+  {
+    "date": "2026-11-12",
+    "mode": "build",
+    "shape": "Feature Stack",
+    "theme": "cobalt",
+    "axes": "light/grotesk-sans/cool",
+    "hero": "Stage",
+    "nav": "edge-aligned",
+    "footer": "statement",
+    "imagery": "Illustrative source previews, semantic diagrams, and an original three-panel comic",
+    "photos": [],
+    "entry": "src/pages/index.astro",
+    "fingerprint": "source-led split / reading questions / agent facts / five-format explorer / sourced finding / install / native FAQ / statement close",
+    "sections": [
+      "source-led hero",
+      "review questions",
+      "agent workflow",
+      "five-format explorer",
+      "comprehension research",
+      "installation",
+      "FAQ",
+      "statement footer"
+    ],
+    "signature": "One illustrative change from source to understanding across five formats",
+    "prompt": "Build the approved homepage in typed Astro, with schema-validated Markdown front matter, Cobalt, local-agent messaging, and interactive previews; leave the real PR showcase for later.",
+    "draw": "1b46a5",
+    "swaps": [
+      "Stage replaces Counter for the approved source-led hero",
+      "Edge-aligned nav replaces banner because no announcement was supplied"
+    ],
+    "reviews": {
+      "hero": "in-thread: one wide headline wrap resolved",
+      "finish": "in-thread: ship; no remaining gap"
+    },
+    "render": {
+      "fail": 0,
+      "reflex": 0,
+      "warn": 1,
+      "dismissed": ["28a: inactive below-fold comic is not LCP"],
+      "acknowledged": ["58: FAQ window has 81 words"]
+    }
+  }
+]

@@ -1,5 +1,11 @@
 ---
-const title = "Agentic Code Unpacked";
+import { getEntry } from "astro:content";
+import DemoPreview from "../components/DemoPreview.astro";
+import CommandBlock from "../components/CommandBlock.astro";
+
+const entry = await getEntry("pages", "home");
+if (!entry) throw new Error("Homepage content is missing");
+const content = entry.data;
 ---
 
 <!doctype html>
@@ -7,9 +13,241 @@ const title = "Agentic Code Unpacked";
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{title}</title>
+    <meta name="description" content={content.seo.description} />
+    <link rel="canonical" href={content.seo.canonical} />
+    <link
+      rel="preload"
+      href="/fonts/familjen-grotesk.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link rel="preload" href="/fonts/ibm-plex-sans.woff2" as="font" type="font/woff2" crossorigin />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={content.seo.title} />
+    <meta property="og:description" content={content.seo.description} />
+    <meta property="og:url" content={content.seo.canonical} />
+    <title>{content.seo.title}</title>
   </head>
   <body>
-    <h1>{title}</h1>
+    <a class="skip" href="#main">
+      {content.ui.skip}
+    </a>
+    <header class="site-header container">
+      <a class="wordmark" href="/" aria-label={content.brand}>
+        <span aria-hidden="true">[c/u]</span>
+        {content.brand}
+      </a>
+      <nav class="desktop-nav" aria-label={content.ui.menu}>
+        {content.navigation.map((link) => (
+          <a href={link.href}>{link.label}</a>
+        ))}
+      </nav>
+      <details class="mobile-nav">
+        <summary>{content.ui.menu}</summary>
+        <nav aria-label={content.ui.menu}>
+          {content.navigation.map((link) => (
+            <a href={link.href}>{link.label}</a>
+          ))}
+        </nav>
+      </details>
+    </header>
+    <main id="main">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="container intro-layout">
+          <div class="intro-copy">
+            <h1 id="hero-title">{content.hero.title}</h1>
+            <p class="lead">{content.hero.description}</p>
+            <div class="actions">
+              <a class="button primary" href={content.hero.primary.href}>
+                {content.hero.primary.label}
+              </a>
+              <a class="text-link" href={content.hero.secondary.href}>
+                {content.hero.secondary.label}
+              </a>
+            </div>
+          </div>
+          <figure class="hero-product" data-slot="hero" aria-label={content.skills.disclosure}>
+            <div class="hero-file">
+              <span>{content.hero.source.file}</span>
+              <span class="file-syntax" aria-hidden="true">
+                {"{ }"}
+              </span>
+            </div>
+            <pre class="hero-source"><code>{content.hero.source.code.trimEnd().split("\n").map((line, index) => <span class:list={["source-line", { "source-line-focus": line.includes("events.insert") || line.includes("orderId") }]}><span class="line-number" aria-hidden="true">{index + 1}</span>{line}</span>)}</code></pre>
+            <div class="hero-constraint">
+              <span class="constraint-connector" aria-hidden="true"></span>
+              <code>{content.hero.constraint}</code>
+            </div>
+            <div class="hero-outcome">
+              <p>{content.hero.note}</p>
+              <span class="outcome-glyph" aria-hidden="true">
+                ↳
+              </span>
+            </div>
+            <figcaption>{content.skills.disclosure}</figcaption>
+          </figure>
+        </div>
+      </section>
+      <section class="problem-section section" aria-labelledby="problem-title">
+        <div class="container">
+          <div class="section-heading">
+            <h2 id="problem-title">{content.problem.title}</h2>
+            <p class="lead">{content.problem.description}</p>
+          </div>
+          <dl class="problem-rows">
+            {content.problem.moments.map((moment) => (
+              <div>
+                <dt>{moment.title}</dt>
+                <dd>{moment.text}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
+      <section class="approach-section section" aria-labelledby="approach-title">
+        <div class="container approach-layout">
+          <div>
+            <h2 id="approach-title">{content.approach.title}</h2>
+            <p class="lead">{content.approach.description}</p>
+            <p class="license-line">{content.approach.license}</p>
+          </div>
+          <ul class="approach-facts">
+            {content.approach.facts.map((fact) => (
+              <li>{fact}</li>
+            ))}
+          </ul>
+        </div>
+      </section>
+      <section class="skills-section section" id="skills" aria-labelledby="skills-title">
+        <div class="container">
+          <div class="section-heading">
+            <h2 id="skills-title">{content.skills.title}</h2>
+            <p class="lead">{content.skills.description}</p>
+          </div>
+          <div class="example-context">
+            <p>{content.skills.example}</p>
+            <p>{content.skills.disclosure}</p>
+          </div>
+          <div class="demo-explorer" data-switch>
+            <div class="skill-tabs" data-switch-tabs aria-label={content.skills.title}>
+              {content.demos.map((demo) => (
+                <a data-switch-tab id={`skill-tab-${demo.id}`} href={`#demo-${demo.id}`}>
+                  {demo.label}
+                </a>
+              ))}
+            </div>
+            <div class="demo-stage" data-switch-panels>
+              {content.demos.map((demo) => (
+                <DemoPreview demo={demo} ui={content.ui} />
+              ))}
+            </div>
+          </div>
+          <div class="bundle-callout">
+            <div>
+              <h3>{content.bundle.title}</h3>
+              <p>{content.bundle.text}</p>
+            </div>
+            <CommandBlock command={content.bundle.command} ui={content.ui} compact />
+          </div>
+        </div>
+      </section>
+      <section class="research-section section" id="why" aria-labelledby="research-title">
+        <div class="container">
+          <h2 id="research-title">{content.research.title}</h2>
+          <div class="research-layout">
+            <div class="research-finding">
+              <p class="research-figure">{content.research.figure}</p>
+              <p class="research-explanation">{content.research.explanation}</p>
+              <p class="research-detail">{content.research.detail}</p>
+              <a class="text-link" href={content.research.source.href}>
+                {content.research.source.label}
+              </a>
+            </div>
+            <div class="research-review">
+              <p>{content.research.review}</p>
+              <a class="text-link" href={content.research.reviewSource.href}>
+                {content.research.reviewSource.label}
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section class="install-section section" id="install" aria-labelledby="install-title">
+        <div class="container install-layout">
+          <div>
+            <h2 id="install-title">{content.install.title}</h2>
+            <p class="lead">{content.install.description}</p>
+            <a class="text-link" href={content.install.guide.href}>
+              {content.install.guide.label}
+            </a>
+          </div>
+          <div class="install-commands">
+            <CommandBlock command={content.install.command} ui={content.ui} />
+            <CommandBlock command={content.install.usage} ui={content.ui} />
+            <details class="setup-detail">
+              <summary>{content.install.codexLabel}</summary>
+              <CommandBlock command={content.install.codexUsage} ui={content.ui} />
+            </details>
+            <details class="setup-detail">
+              <summary>{content.install.detailsLabel}</summary>
+              <p>{content.install.requirements}</p>
+              <ul class="agent-list">
+                {content.install.agents.map((agent) => (
+                  <li>{agent}</li>
+                ))}
+              </ul>
+            </details>
+          </div>
+        </div>
+      </section>
+      <section class="faq-section section" id="faq" aria-labelledby="faq-title">
+        <div class="container faq-layout">
+          <h2 id="faq-title">{content.faq.title}</h2>
+          <div class="faq-list">
+            {content.faq.items.map((item) => (
+              <details>
+                <summary>{item.question}</summary>
+                <p>{item.answer}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+    </main>
+    <footer class="site-footer section">
+      <div class="container">
+        <div class="closing">
+          <div>
+            <h2>{content.closing.title}</h2>
+            <p class="lead">{content.closing.text}</p>
+          </div>
+          <a class="button primary" href={content.closing.action.href}>
+            {content.closing.action.label}
+          </a>
+        </div>
+        <div class="footer-links">
+          <div>
+            <a class="wordmark" href="/">
+              {content.brand}
+            </a>
+            <p>{content.footer.description}</p>
+          </div>
+          <nav aria-label={content.ui.menu}>
+            {content.footer.links.map((link) => (
+              <a href={link.href}>{link.label}</a>
+            ))}
+            <a href={content.footer.license.href}>{content.footer.license.label}</a>
+          </nav>
+        </div>
+      </div>
+    </footer>
+    <script>
+      import "../scripts/homepage";
+    </script>
   </body>
 </html>
+
+<style is:global>
+  @import "../styles/site.css";
+</style>
