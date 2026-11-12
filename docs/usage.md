@@ -6,7 +6,7 @@ Commands below use Claude-style invocation. Codex uses `$skill-name`. Other harn
 
 ## Targets
 
-All five skills accept these targets:
+All skills accept these targets:
 
 | Target | Example |
 | --- | --- |
@@ -18,6 +18,19 @@ All five skills accept these targets:
 | Pasted code | Ask the agent to explain the supplied code using the chosen skill |
 
 PRs pin both revisions. Branches compare committed changes against the merge base. File and codebase runs capture local source and record dirty state. Explanations retain source references and disclose missing evidence.
+
+## All formats
+
+```text
+/code-unpacked pr https://github.com/owner/repo/pull/123 --draft
+/code-unpacked codebase
+```
+
+Generates the walkthrough, reverse-design documents, code map, review quiz, and comics in one agent workflow. Install only `code-unpacked` to get the complete bundle; the individual skills do not need to be installed. Source capture and shared analysis happen once, so all outputs explain the same snapshot.
+
+The default walkthrough is HTML. Ask to include video when wanted; it additionally requires FFmpeg. Quiz length and comic count/panel requests work as with the individual skills. If a format fails or image generation is unavailable, completed outputs remain available and the agent reports each result separately. Comic storyboards and prompts are preserved for resumption.
+
+The native Claude plugin command is `/code-unpacked:code-unpacked`. Outputs use the same per-format locations described below. PR delivery follows the same draft and live-delivery rules as the individual skills.
 
 ## Walkthrough
 

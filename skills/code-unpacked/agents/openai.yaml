@@ -1,0 +1,4 @@
+interface:
+  display_name: "Code Unpacked"
+  short_description: "Generate all five code explanation formats in one run"
+  default_prompt: "Use $code-unpacked to explain this code with a walkthrough, design documents, code map, quiz, and comics from one shared analysis."

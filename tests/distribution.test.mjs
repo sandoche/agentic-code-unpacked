@@ -3,16 +3,17 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import os from 'node:os';
 import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
-import { ROOT, SKILLS, skillFiles } from '../scripts/build-skills.mjs';
+import { ROOT, SKILLS, PRESENTATION_SKILLS, skillFiles } from '../scripts/build-skills.mjs';
 import { publishSkills } from '../scripts/publish-skills.mjs';
 
-test('website discovery publishes exactly five complete portable skills', async () => {
+test('website discovery publishes all six complete portable skills', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'unpacked-publish-'));
   try {
     await publishSkills(directory);
     const base = path.join(directory, '.well-known', 'agent-skills');
     const { skills } = JSON.parse(await readFile(path.join(base, 'index.json'), 'utf8'));
     assert.deepEqual(skills.map(item => item.name), SKILLS);
+    assert.equal(skills.length, 6);
     for (const skill of skills) {
       assert.ok(skill.description.length > 0);
       assert.ok(skill.files.includes('SKILL.md'));
@@ -25,6 +26,22 @@ test('website discovery publishes exactly five complete portable skills', async 
       }
       const instructions = await readFile(path.join(base, skill.name, 'SKILL.md'), 'utf8');
       for (const [, reference] of instructions.matchAll(/\]\(([^)]+)\)/g)) await readFile(path.join(base, skill.name, reference));
+    }
+    const combined = skills.find(item => item.name === 'code-unpacked');
+    assert.deepEqual(combined.files.filter(file => path.posix.basename(file) === 'SKILL.md'), ['SKILL.md']);
+    assert.deepEqual(combined.files.filter(file => file.endsWith('scripts/dependencies.mjs')), ['runtime/scripts/dependencies.mjs']);
+    for (const name of PRESENTATION_SKILLS) {
+      assert.ok(combined.files.includes(`presentations/${name}/scripts/${name}.mjs`));
+      assert.ok(combined.files.some(file => file.startsWith(`presentations/${name}/assets/`)));
+    }
+    for (const file of combined.files.filter(file => file.endsWith('.md'))) {
+      const contents = await readFile(path.join(base, combined.name, file), 'utf8');
+      for (const [, reference] of contents.matchAll(/\]\(([^)]+)\)/g)) {
+        if (/^(?:https?:|#)/.test(reference)) continue;
+        const target = path.resolve(base, combined.name, path.dirname(file), reference);
+        assert.ok(target.startsWith(path.join(base, combined.name) + path.sep));
+        await readFile(target);
+      }
     }
     const folders = await readdir(path.join(ROOT, 'skills'));
     assert.deepEqual(folders.sort(), [...SKILLS].sort());

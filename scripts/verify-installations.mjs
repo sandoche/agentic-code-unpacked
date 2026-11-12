@@ -7,9 +7,10 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { mkdtemp, mkdir, readFile, writeFile, readdir } from 'node:fs/promises';
 import assert from 'node:assert/strict';
-import { ROOT, SKILLS } from './build-skills.mjs';
+import { ROOT, SKILLS, PRESENTATION_SKILLS } from './build-skills.mjs';
 import { publishSkills } from './publish-skills.mjs';
 import { quizFixture } from '../tests/skills/review-quiz/fixtures.mjs';
+import { verifyCombinedSkill } from '../tests/helpers/combined.mjs';
 
 const exec = promisify(execFile);
 const cli = process.argv[2];
@@ -27,7 +28,7 @@ const server = createServer(async (request, response) => {
 });
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const json = async (file, value) => writeFile(file, JSON.stringify(value));
-let installed;
+let installed, combinedSkill;
 try {
   const agents = ['claude-code', 'codex', 'cursor', 'github-copilot', 'gemini-cli', 'opencode'];
   async function install(label, source, agent, skills = ['*'], globalInstall = false) {
@@ -56,6 +57,7 @@ try {
   for (const skill of SKILLS) {
     const target = await install('single-' + skill, ROOT, 'claude-code', [skill]);
     assert.deepEqual((await readdir(target)).filter(name => !name.startsWith('.')), [skill]);
+    if (skill === 'code-unpacked') combinedSkill = path.join(target, skill);
   }
   await install('hosted', `http://127.0.0.1:${server.address().port}`, 'claude-code');
 
@@ -68,7 +70,7 @@ try {
   await mkdir(hooks);
   await exec('git', ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', '-c', `core.hooksPath=${hooks}`, 'commit', '-qm', 'fixture'], { cwd: repository, windowsHide: true });
   const outputs = [];
-  for (const skill of SKILLS) {
+  for (const skill of PRESENTATION_SKILLS) {
     const folder = path.join(installed, skill);
     await exec(process.execPath, [path.join(folder, 'runtime', 'scripts', 'code-unpacked.mjs'), 'collect', 'docs', 'sample', '--files', 'handler.js', '--root', repository], { windowsHide: true, timeout: 120_000 });
     const contextFile = path.join(repository, '.code-unpacked', 'docs', 'sample', 'context', 'context.json');
@@ -97,6 +99,8 @@ try {
     outputs.push(output);
     console.log(`Rendered installed ${skill}`);
   }
-  await json(path.join(directory, 'report.json'), { agents, individuallyInstalled: SKILLS, hosted: true, outputs });
+  const combined = await verifyCombinedSkill(combinedSkill, path.join(directory, 'combined'));
+  console.log('Rendered installed code-unpacked from one shared context, including incomplete-comic recovery');
+  await json(path.join(directory, 'report.json'), { agents, individuallyInstalled: SKILLS, hosted: true, outputs, combined });
   console.log(`Integration report: ${path.join(directory, 'report.json')}`);
 } finally { await new Promise(resolve => server.close(resolve)); }

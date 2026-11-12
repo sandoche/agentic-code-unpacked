@@ -11,7 +11,9 @@ pnpm --filter website build
 
 ## Skill bundles
 
-The five skills under `skills/` are independently installable. Shared runtime source, source schemas, and operating guidance live in `packages/core/`. Edit that canonical source, then run `pnpm skills:build` to refresh each skill's committed `runtime/` directory. `pnpm skills:check` detects stale or extra bundled files without rewriting them.
+The skills under `skills/` are independently installable. Shared runtime source, source schemas, and operating guidance live in `packages/core/`. Edit that canonical source, then run `pnpm skills:build` to refresh each skill's committed `runtime/` directory. `pnpm skills:check` detects stale or extra bundled files without rewriting them.
+
+`code-unpacked` orchestrates the five presentation formats. Its generated `presentations/` directory copies the maintained workflows, schemas, renderers, and assets, with imports and links rewritten to its one shared runtime. Edit the individual presentations and rebuild; do not edit generated copies. Nested skill entrypoints and UI metadata are omitted to avoid duplicate discovery. Keep `PRESENTATION_SKILLS` separate from the complete installable `SKILLS` list.
 
 Keep the runtime's `package-lock.json` in sync when changing pinned dependencies. The runtime installs with `npm ci --omit=dev --ignore-scripts`, outside the analyzed repository. Its user cache is keyed by the manifest and lockfile. `CODE_UNPACKED_CACHE` can select a different cache directory for isolated tests or managed environments.
 
@@ -41,7 +43,7 @@ Tests cover source capture, rendering, browser interactions, bootstrap recovery/
 
 For the full installer matrix, run `node scripts/verify-installations.mjs /absolute/path/to/skills/bin/cli.mjs` with an installed skills CLI. It checks all six documented harnesses, individual selection, HTTP discovery, and all five renderers in temporary projects, retaining a report outside the checkout.
 
-The website build publishes the five skills at `/.well-known/agent-skills/index.json` and supporting files beneath that directory, using the skills CLI's compatible `name`, `description`, and `files` discovery format. It excludes tests, dependencies, and local artifacts. The homepage remains independent of distribution.
+The website build publishes all installable skills at `/.well-known/agent-skills/index.json` and supporting files beneath that directory, using the skills CLI's compatible `name`, `description`, and `files` discovery format. It excludes tests, dependencies, and local artifacts. The homepage remains independent of distribution.
 
 The Claude marketplace and plugin manifests point to the same skill folders. Do not maintain a second set of skill instructions for plugin installations.
 

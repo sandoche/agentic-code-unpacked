@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added the standalone code-unpacked skill to generate all five formats from one shared analysis.
+
 - Added independent skill bundles, automatic first-use setup, and shared dependency caching.
 - Added cross-harness installation, hosted skill discovery, and a native Claude plugin.
 - Simplified the README and documented direct skill usage with linked technical references.

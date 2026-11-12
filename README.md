@@ -1,8 +1,8 @@
-# Code Unpacked
+# 🧩 Code Unpacked
 
-Understand a PR or codebase through walkthroughs, architecture docs, interactive maps, quizzes, and comics. Five independent skills for your coding agent.
+Understand a PR or codebase through walkthroughs, architecture docs, interactive maps, quizzes, and comics. Use each format independently or generate all five with `/code-unpacked`.
 
-## Install
+## 📦 Install
 
 Run from your project, then choose the skills and agents you use:
 
@@ -13,8 +13,8 @@ npx skills add sandoche/agentic-code-unpacked
 Supports **Claude Code, Codex, Cursor, GitHub Copilot, Gemini CLI, OpenCode**, and other [skills CLI harnesses](https://github.com/vercel-labs/skills/blob/main/docs/agents.md). Requires Node.js **22.23.4+** with npm. No clone or pnpm needed.
 
 ```sh
-# One skill, one agent
-npx skills add sandoche/agentic-code-unpacked --skill walkthrough -a claude-code
+# All five formats with one skill
+npx skills add sandoche/agentic-code-unpacked --skill code-unpacked -a claude-code
 
 # Available across your projects
 npx skills add sandoche/agentic-code-unpacked -g
@@ -40,12 +40,13 @@ Plugin commands have a namespace, for example `/code-unpacked:walkthrough`. Choo
 
 </details>
 
-## Use
+## 🚀 Use
 
 Start a new agent session after installation. Invoke a skill directly or ask your agent to use it:
 
 | Skill | What you get |
 | --- | --- |
+| [/code-unpacked](docs/usage.md#all-formats) | All five formats from one source snapshot and shared analysis |
 | [/walkthrough](docs/usage.md#walkthrough) | A source-linked code tour; optional silent video with captions |
 | [/reverse-design](docs/usage.md#reverse-design) | Architecture, behavior, and design documents with diagrams |
 | [/code-map](docs/usage.md#code-map) | An interactive map of files, functions, and relationships |
@@ -53,6 +54,7 @@ Start a new agent session after installation. Invoke a skill directly or ask you
 | [/xkcd](docs/usage.md#xkcd) | Stick-figure comics explaining the code |
 
 ```text
+/code-unpacked pr https://github.com/owner/repo/pull/123 --draft
 /walkthrough pr https://github.com/owner/repo/pull/123 --draft
 /reverse-design branch feature/login --base main
 /code-map codebase
@@ -66,7 +68,7 @@ The agent handles setup and generation. Dependencies download on first use; Chro
 
 Artifacts are saved in `.code-unpacked/` inside the analyzed repository. Open the generated HTML locally; it works offline. PR runs can prepare comments and attachments. `--draft` keeps delivery local.
 
-## Update or remove
+## 🔄 Update or remove
 
 ```sh
 npx skills update
