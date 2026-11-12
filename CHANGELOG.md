@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 — 2026-11-12
+
+- Added source-backed architecture quiz questions with partial diagrams, alternative diagrams, and completed diagrams after submission.
+- Synchronized all six skills, bundled runtimes, and plugin metadata at version 0.3.0.
+- Isolated fixture Git commands from inherited hook settings during pre-commit tests.
 
 - Added the standalone code-unpacked skill to generate all five formats from one shared analysis.
 

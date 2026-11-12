@@ -1,4 +1,4 @@
 interface:
   display_name: "Review Quiz"
-  short_description: "Choose quiz length and check code understanding"
-  default_prompt: "Use $review-quiz to create a source-backed comprehension quiz with eight questions, or the length I request, about behavior, review risks, and extension points."
+  short_description: "Check code and architecture with diagram questions"
+  default_prompt: "Use $review-quiz to create a source-backed comprehension quiz with eight questions, or my requested length, about architecture, behavior, review risks, and extension points, including diagram questions when supported."

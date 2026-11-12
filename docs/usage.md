@@ -54,7 +54,7 @@ Produces an interactive offline canvas with files, function drill-down, typed re
 
 `/review-quiz docs auth --files src/auth.ts --questions 12`
 
-Produces an offline quiz with deterministic scores, answer explanations, reset, and source-linked recommendations. Defaults to eight questions; insufficient source evidence produces fewer with a reason.
+Produces an offline quiz with deterministic scores, answer explanations, reset, and source-linked recommendations. Architecture questions include partial diagrams, flow interpretation, incorrect connections, or diagram choices when the source supports them. Completed or corrected diagrams appear after submission. Defaults to eight questions, aiming for two architecture checks within that total; insufficient source evidence produces fewer with a reason. Diagrams use Mermaid during generation and remain embedded in the offline page.
 
 ## Xkcd
 

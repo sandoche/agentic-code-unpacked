@@ -2,7 +2,7 @@
 name: xkcd
 description: Explain source behavior through original stick-figure comics for a PR, branch, codebase, or selected code; requires an image-generation tool.
 metadata:
-  version: "0.2.0"
+  version: "0.3.0"
 ---
 
 # Code Comics

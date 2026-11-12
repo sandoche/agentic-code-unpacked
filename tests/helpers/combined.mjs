@@ -35,7 +35,8 @@ export async function verifyCombinedSkill(skill, directory) {
   context = JSON.parse(savedContext);
   const contextHash = hash(JSON.stringify(context));
   const claim = markdown => ({ markdown, basis: 'observed', evidence: [id] });
-  const quiz = { ...quizFixture(), schemaVersion: 2, requestedCount: 3, generatedCount: 3 };
+  const quiz = { ...quizFixture(), schemaVersion: 3, requestedCount: 3, generatedCount: 3 };
+  quiz.questions[0].diagram = { title: 'Truthy input path', description: 'A truthy input passes the guard and returns unchanged.', mermaid: 'flowchart LR\n  Input[Truthy input] --> Guard\n  Guard --> Return[Return input]' };
   for (const question of quiz.questions) question.evidence = [id];
   const contents = {
     walkthrough: { schemaVersion: 2, title: 'Save handler', chapters: [{ id: 'guard', title: 'Input validation', topicIds: ['guard'], steps: [{ id: 'reject', title: 'Reject falsy input', explanation: 'The guard throws before returning.', evidence: [id], snippets: [{ evidence: id }] }] }] },
@@ -68,6 +69,10 @@ export async function verifyCombinedSkill(skill, directory) {
       await readFile(path.join(output, 'prompts.json'));
       await readFile(path.join(output, 'storyboard.json'));
     } else preserved.set(manifestFile, await readFile(manifestFile));
+    if (name === 'review-quiz') {
+      assert.match(await readFile(path.join(output, 'index.html'), 'utf8'), /<svg\b/);
+      assert.deepEqual(JSON.parse(await readFile(path.join(output, 'quiz.json'), 'utf8')).questions[0].diagram, quiz.questions[0].diagram);
+    }
     await readFile(path.join(output, 'index.html'));
     assert.ok((await readFile(contextFile)).equals(savedContext));
     outputs.push(output);

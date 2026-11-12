@@ -50,7 +50,7 @@ Start a new agent session after installation. Invoke a skill directly or ask you
 | [/walkthrough](docs/usage.md#walkthrough) | A source-linked code tour; optional silent video with captions |
 | [/reverse-design](docs/usage.md#reverse-design) | Architecture, behavior, and design documents with diagrams |
 | [/code-map](docs/usage.md#code-map) | An interactive map of files, functions, and relationships |
-| [/review-quiz](docs/usage.md#review-quiz) | A comprehension quiz with answers and source references |
+| [/review-quiz](docs/usage.md#review-quiz) | A comprehension quiz with architecture diagrams, answers, and source references |
 | [/xkcd](docs/usage.md#xkcd) | Stick-figure comics explaining the code |
 
 ```text

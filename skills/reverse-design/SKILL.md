@@ -2,7 +2,7 @@
 name: reverse-design
 description: Reconstruct source-backed architecture, behavior, and design documents for a PR, branch, codebase, or selected code.
 metadata:
-  version: "0.2.0"
+  version: "0.3.0"
 ---
 
 # Reverse Design

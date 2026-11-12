@@ -5,7 +5,7 @@ import { execFile, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
 import { importDependency, resolveDependency, ensureDependencies, withFileLock, runProcess } from './dependencies.mjs';
 
-export const VERSION='0.2.0';
+export const VERSION='0.3.0';
 const exec=promisify(execFile);
 export const hash=value=>createHash('sha256').update(value).digest('hex');
 export const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

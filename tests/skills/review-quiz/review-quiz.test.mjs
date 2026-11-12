@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import os from 'node:os';
 import { validateQuiz, gradeQuiz, renderQuiz, parseQuestionCount } from '../../../skills/review-quiz/scripts/review-quiz.mjs';
-import { context, quizFixture } from './fixtures.mjs';
+import { context, quizFixture, architectureContext, architectureQuizFixture } from './fixtures.mjs';
 
 test('validates content, answer IDs, unique IDs, and evidence', () => {
   assert.equal(validateQuiz(context, quizFixture()).questions.length, 3);
@@ -23,7 +23,7 @@ test('validates content, answer IDs, unique IDs, and evidence', () => {
     quiz => { quiz.questions[0].id = 123; },
     quiz => { quiz.questions[0].options[0].id = 123; quiz.questions[0].correctOptionId = 123; },
     quiz => { quiz.questions[0].options[1].text = ' The input value '; },
-    quiz => { quiz.schemaVersion = 3; },
+    quiz => { quiz.schemaVersion = 4; },
   ]) {
     const quiz = quizFixture();
     mutate(quiz);
@@ -40,8 +40,8 @@ test('question count accepts positive integers and rejects ambiguous or invalid 
   }
 });
 
-test('v2 count validation honors the request and requires an evidence shortfall reason', () => {
-  const quiz = { ...quizFixture(), schemaVersion: 2, requestedCount: 3 };
+for (const schemaVersion of [2, 3]) test(`v${schemaVersion} count validation honors the request and requires an evidence shortfall reason`, () => {
+  const quiz = { ...quizFixture(), schemaVersion, requestedCount: 3 };
   quiz.questions[0].topic = 'extension';
   assert.equal(validateQuiz(context, quiz), quiz);
   assert.throws(() => validateQuiz(context, { ...quiz, requestedCount: 2 }), /more|exceed/i);
@@ -55,6 +55,62 @@ test('v2 count validation honors the request and requires an evidence shortfall 
   assert.throws(() => validateQuiz(context, quiz, { questions: 4 }), /request|questions/i);
   const defaultQuiz = { ...quiz, requestedCount: undefined, insufficientEvidence: 'Only three distinct checks are supported.' };
   assert.equal(validateQuiz(context, defaultQuiz), defaultQuiz);
+});
+
+test('architecture diagrams inherit question evidence and use the existing grading rules', () => {
+  const quiz = architectureQuizFixture();
+  assert.equal(validateQuiz(architectureContext, quiz), quiz);
+  assert.equal(gradeQuiz(quiz, { missing: 'repository', sequence: 'chain', correction: 'repository' }).score, 100);
+  const grade = gradeQuiz(quiz, { missing: 'browser', sequence: 'chain' });
+  assert.equal(grade.score, 33);
+  assert.equal(grade.unanswered, 1);
+  assert.equal(grade.recommendations[0].topic, 'architecture');
+  assert.deepEqual(grade.recommendations[0].evidence, ['handler-head', 'repository-head']);
+  quiz.questions[0].evidence = ['unknown'];
+  assert.throws(() => validateQuiz(architectureContext, quiz), /evidence/i);
+});
+
+test('diagram metadata and version requirements apply to prompts, choices, and explanations', () => {
+  for (const location of [
+    question => [question, 'diagram'],
+    question => [question.options[0], 'diagram'],
+    question => [question, 'explanationDiagram'],
+  ]) {
+    for (const invalid of [null, [], 'flowchart LR', {}, { title: 'Chart', description: 'Chart' }, { title: 'Chart', description: ' ', mermaid: 'flowchart LR\nA-->B' }]) {
+      const quiz = architectureQuizFixture();
+      const [owner, key] = location(quiz.questions[0]);
+      owner[key] = invalid;
+      assert.throws(() => validateQuiz(architectureContext, quiz), /Invalid diagram/);
+    }
+    for (const schemaVersion of [1, 2]) {
+      const quiz = { ...quizFixture(), schemaVersion, requestedCount: 3 };
+      const [owner, key] = location(quiz.questions[0]);
+      owner[key] = architectureQuizFixture().questions[0].diagram;
+      assert.throws(() => validateQuiz(context, quiz), /requires schemaVersion 3/);
+    }
+  }
+  for (const schemaVersion of [1, 2]) {
+    const quiz = { ...quizFixture(), schemaVersion, requestedCount: 3 };
+    quiz.questions[0].topic = 'architecture';
+    assert.throws(() => validateQuiz(context, quiz), /require schemaVersion 3/);
+  }
+});
+
+test('diagrams reject executable content, external assets, and Mermaid configuration overrides', () => {
+  for (const mermaid of [
+    'flowchart LR\nA["<script>alert(1)</script>"]',
+    'flowchart LR\nA["<img onerror=alert(1)>"]',
+    'flowchart LR\nA-->B\nclick A "https://example.com"',
+    'flowchart LR\nA["javascript:alert(1)"]',
+    'flowchart LR\nA@{ img: "https://example.com/node.png" }',
+    'flowchart LR\nA@{ img: "./node.png" }',
+    '%%{init: {"securityLevel": "loose"}}%%\nflowchart LR\nA-->B',
+    '---\nconfig:\n  securityLevel: loose\n---\nflowchart LR\nA-->B',
+  ]) {
+    const quiz = architectureQuizFixture();
+    quiz.questions[0].diagram.mermaid = mermaid;
+    assert.throws(() => validateQuiz(architectureContext, quiz), /Unsafe Mermaid diagram/);
+  }
 });
 
 test('rendered v2 metadata records requested and generated counts without padding', async () => {
