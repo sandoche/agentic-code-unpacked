@@ -1,1 +1,4 @@
 * text=auto eol=lf
+
+# Unified diffs preserve upstream indentation and patch headers.
+patches/*.patch -whitespace

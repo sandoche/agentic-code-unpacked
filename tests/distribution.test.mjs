@@ -52,8 +52,12 @@ test('website discovery publishes all six complete portable skills', async () =>
       assert.deepEqual(skill.files, await skillFiles(path.join(ROOT, 'skills', skill.name)));
       for (const file of skill.files) {
         assert.doesNotMatch(file, /(?:^|\/)(?:node_modules|tests|\.git|\.code-unpacked)(?:\/|$)/);
+        assert.doesNotMatch(file, /(?:^|\/)src\/|\.(?:mts|tsbuildinfo|map)$|\.d\.ts$/);
         assert.ok((await readFile(path.join(base, skill.name, file))).equals(await readFile(path.join(ROOT, 'skills', skill.name, file))));
       }
+      const runtime = JSON.parse(await readFile(path.join(base, skill.name, 'runtime/package.json'), 'utf8'));
+      assert.equal(runtime.dependencies.typescript, '6.0.3');
+      assert.equal(runtime.devDependencies, undefined);
       const instructions = await readFile(path.join(base, skill.name, 'SKILL.md'), 'utf8');
       for (const [, reference] of instructions.matchAll(/\]\(([^)]+)\)/g)) await readFile(path.join(base, skill.name, reference));
     }

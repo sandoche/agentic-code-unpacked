@@ -1,6 +1,7 @@
 # Development
 
 Use Node.js 22.23.4+ and the pnpm version pinned in `package.json`.
+Development uses Node.js 26.13.1 LTS; install and select it with `nvm install 26.13.1` and `nvm use 26.13.1`. Compatibility checks also run on Node.js 22.23.4.
 
 ```sh
 pnpm install
@@ -11,7 +12,13 @@ pnpm --filter website build
 
 ## Skill bundles
 
-The skills under `skills/` are independently installable. Shared runtime source, source schemas, and operating guidance live in `packages/core/`. Edit that canonical source, then run `pnpm skills:build` to refresh each skill's committed `runtime/` directory. `pnpm skills:check` detects stale or extra bundled files without rewriting them.
+The skills under `skills/` are independently installable. Maintain shared TypeScript in `packages/core/src/` and presentation TypeScript in `packages/presentations/<skill>/src/`. Schemas, CSS, and operating guidance remain alongside their existing assets and references. Run `pnpm skills:build` to compile the `.mts` sources and refresh the committed JavaScript and skill bundles. Generated files identify their source in a header; edit the TypeScript source rather than the generated scripts or browser assets. Existing installed commands and artifact paths stay the same.
+
+`pnpm skills:check` compiles into a temporary directory and compares the generated scripts and bundles without rewriting tracked files. It rejects stale, missing, or extra output. Installed skills contain ready-to-run JavaScript and do not need the native TypeScript compiler.
+
+`pnpm typecheck` uses the pinned TypeScript 7 native compiler. `pnpm lint:typescript` runs type-aware Oxlint over all maintained runtime and presentation sources. Both are part of `pnpm run check` and the pre-commit hook. Explicit or implicit `any`, unsafe uses of untyped values, non-null assertions, floating promises, and TypeScript/lint suppression directives are rejected. Narrow JSON and external values from `unknown` with guards. Keep the runtime's TypeScript 6 dependency for the existing AST API and the website's TypeScript 6 tooling.
+
+The pinned Oxfmt dependency has a pnpm patch in `patches/` that uses child-process workers on Windows. This avoids an intermittent native crash during Astro formatter worker shutdown while retaining the normal formatting checks and exit codes. Other platforms keep worker threads. Recheck this workaround when upgrading Oxfmt.
 
 `code-unpacked` orchestrates the five presentation formats. Its generated `presentations/` directory copies the maintained workflows, schemas, renderers, and assets, with imports and links rewritten to its one shared runtime. Edit the individual presentations and rebuild; do not edit generated copies. Nested skill entrypoints and UI metadata are omitted to avoid duplicate discovery. Keep `PRESENTATION_SKILLS` separate from the complete installable `SKILLS` list.
 
