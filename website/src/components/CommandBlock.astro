@@ -1,0 +1,27 @@
+---
+import type { HomepageContent } from "../lib/homepage-schema";
+interface Props {
+  command: string;
+  ui: HomepageContent["ui"];
+  compact?: boolean;
+}
+const { command, ui, compact = false } = Astro.props;
+---
+
+<div class:list={["command-block", { "command-compact": compact }]} data-copy-root>
+  <div class="command-line">
+    <code tabindex="0" data-copy-text>
+      {command}
+    </code>
+    <button
+      class="button copy-button"
+      type="button"
+      data-copy
+      data-success={ui.copied}
+      data-fallback={ui.copyFallback}
+    >
+      {ui.copy}
+    </button>
+  </div>
+  <p class="copy-status" role="status" aria-live="polite" data-copy-status></p>
+</div>
