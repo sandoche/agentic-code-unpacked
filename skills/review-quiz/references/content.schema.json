@@ -1,10 +1,10 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Review quiz content v1/v2",
+  "title": "Review quiz content v1/v2/v3",
   "type": "object",
   "required": ["schemaVersion", "title", "questions"],
   "properties": {
-    "schemaVersion": { "enum": [1, 2] },
+    "schemaVersion": { "enum": [1, 2, 3] },
     "title": { "type": "string", "minLength": 1 },
     "summary": { "type": "string" },
     "requestedCount": { "type": "integer", "minimum": 1, "default": 8 },
@@ -19,22 +19,45 @@
         "properties": {
           "id": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$" },
           "prompt": { "type": "string", "minLength": 1 },
-          "topic": { "enum": ["behavior", "flow", "interfaces", "failures", "tests", "limitations", "security", "extension"] },
+          "topic": { "enum": ["behavior", "flow", "interfaces", "failures", "tests", "limitations", "security", "extension", "architecture"] },
+          "diagram": { "$ref": "#/$defs/diagram" },
           "options": {
             "type": "array", "minItems": 3, "maxItems": 4,
             "items": {
               "type": "object", "required": ["id", "text"],
               "properties": {
                 "id": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$" },
-                "text": { "type": "string", "minLength": 1 }
+                "text": { "type": "string", "minLength": 1 },
+                "diagram": { "$ref": "#/$defs/diagram" }
               }
             }
           },
           "correctOptionId": { "type": "string" },
           "explanation": { "type": "string", "minLength": 1 },
+          "explanationDiagram": { "$ref": "#/$defs/diagram" },
           "evidence": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
           "recommendation": { "type": "string", "minLength": 1 }
         }
+      }
+    }
+  },
+  "allOf": [{
+    "if": { "properties": { "schemaVersion": { "enum": [1, 2] } } },
+    "then": { "properties": { "questions": { "items": { "properties": {
+      "topic": { "not": { "const": "architecture" } },
+      "diagram": false,
+      "explanationDiagram": false,
+      "options": { "items": { "properties": { "diagram": false } } }
+    } } } } }
+  }],
+  "$defs": {
+    "diagram": {
+      "type": "object",
+      "required": ["title", "description", "mermaid"],
+      "properties": {
+        "title": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "mermaid": { "type": "string", "minLength": 1 }
       }
     }
   }

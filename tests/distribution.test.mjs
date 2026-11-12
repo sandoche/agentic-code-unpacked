@@ -2,9 +2,39 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import os from 'node:os';
+import { pathToFileURL } from 'node:url';
 import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
 import { ROOT, SKILLS, PRESENTATION_SKILLS, skillFiles } from '../scripts/build-skills.mjs';
 import { publishSkills } from '../scripts/publish-skills.mjs';
+import { VERSION } from '../packages/core/scripts/core.mjs';
+
+test('all released skills, runtimes, lockfiles, and plugin metadata share one version', async () => {
+  const json = async file => JSON.parse(await readFile(path.join(ROOT, file), 'utf8'));
+  const version = (await json('package.json')).version;
+  assert.equal(VERSION, version, 'canonical runtime');
+  assert.equal((await json('packages/core/package.json')).version, version, 'core package');
+  assert.equal((await json('.claude-plugin/plugin.json')).version, version, 'Claude plugin');
+  const coreLock = await json('packages/core/package-lock.json');
+  assert.equal(coreLock.version, version, 'canonical lockfile');
+  assert.equal(coreLock.packages[''].version, version, 'canonical lockfile root package');
+  for (const name of SKILLS) {
+    const base = `skills/${name}`;
+    const instructions = await readFile(path.join(ROOT, base, 'SKILL.md'), 'utf8');
+    assert.equal(instructions.match(/^  version: "([^"]+)"/m)?.[1], version, `${name} skill metadata`);
+    const ui = await readFile(path.join(ROOT, base, 'agents/openai.yaml'), 'utf8');
+    const uiVersion = ui.match(/^  version: "([^"]+)"/m)?.[1];
+    if (uiVersion !== undefined) assert.equal(uiVersion, version, `${name} UI metadata`);
+    assert.equal((await json(`${base}/runtime/package.json`)).version, version, `${name} runtime package`);
+    const lock = await json(`${base}/runtime/package-lock.json`);
+    assert.equal(lock.version, version, `${name} lockfile`);
+    assert.equal(lock.packages[''].version, version, `${name} lockfile root package`);
+    const runtime = await import(pathToFileURL(path.join(ROOT, base, 'runtime/scripts/core.mjs')).href);
+    assert.equal(runtime.VERSION, version, `${name} artifact version`);
+  }
+  for (const file of ['skills/code-map/VERSION', 'skills/code-unpacked/presentations/code-map/VERSION']) {
+    assert.equal((await readFile(path.join(ROOT, file), 'utf8')).trim(), version, file);
+  }
+});
 
 test('website discovery publishes all six complete portable skills', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'unpacked-publish-'));

@@ -2,7 +2,7 @@
 name: code-map
 description: Build an interactive source-backed map of files, functions, call relationships, and flows for a PR, branch, codebase, or selected code.
 metadata:
-  version: "0.2.0"
+  version: "0.3.0"
 ---
 
 # Code Map

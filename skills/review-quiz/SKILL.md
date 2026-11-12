@@ -1,13 +1,13 @@
 ---
 name: review-quiz
-description: Create an offline comprehension quiz with scored answers and source-linked explanations for a PR, branch, codebase, or selected code.
+description: Create an offline comprehension quiz with architecture diagrams, scored answers, and source-linked explanations for a PR, branch, codebase, or selected code.
 metadata:
-  version: "0.2.0"
+  version: "0.3.0"
 ---
 
 # Review Quiz
 
-Test understanding of actual behavior, execution flow, failure cases, and extension points. Default to eight meaningful questions, with fewer when evidence is insufficient.
+Test understanding of architecture, actual behavior, execution flow, failure cases, and extension points. Include diagram questions when the source supports them. Default to eight meaningful questions, with fewer when evidence is insufficient.
 
 ## Use
 

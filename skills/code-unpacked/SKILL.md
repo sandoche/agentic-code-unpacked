@@ -2,7 +2,7 @@
 name: code-unpacked
 description: Generate all five Code Unpacked formats for a PR, branch, codebase, or selected code. Use when a complete bundle or all formats are requested.
 metadata:
-  version: "0.2.0"
+  version: "0.3.0"
 ---
 
 # Code Unpacked

@@ -2,7 +2,7 @@
 name: walkthrough
 description: Create a source-linked HTML code tour for a PR, branch, codebase, or selected code; optionally export a silent video with captions.
 metadata:
-  version: "0.2.0"
+  version: "0.3.0"
 ---
 
 # Walkthrough
