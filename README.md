@@ -74,3 +74,7 @@ npx skills remove walkthrough
 ```
 
 [Usage and requirements](docs/usage.md) · [Development](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
+
+## 📄 License
+
+Licensed under the [MIT License](LICENSE).
