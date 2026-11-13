@@ -66,10 +66,11 @@ For PR requests prepare the shared draft comment and attachment list. Follow the
 core publishing workflow when posting is requested; do not imply a local HTML
 path is a public preview URL. Demo requests for drafts stay local.
 
-Run meaningful renderer and browser checks with:
+Installed bundles omit development tests. Perform the browser checks above against
+the generated artifact. In the development checkout, run renderer and browser checks with:
 
 ```sh
-node --test skills/code-map/tests/*.test.mjs
+node --test tests/skills/code-map/*.test.mjs
 ```
 
 Rendering needs Node and the shared core. Browser checks need the suite's

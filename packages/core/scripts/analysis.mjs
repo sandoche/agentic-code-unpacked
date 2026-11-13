@@ -51,12 +51,15 @@ export async function analyzeStructure(original) {
             continue;
         }
         if (jsExtensions.test(file.path)) {
-            const ast = ts.createSourceFile(file.path, file.content, ts.ScriptTarget.Latest, true, /x$/.test(file.path) ? ts.ScriptKind.TSX : ts.ScriptKind.JS);
+            const extension = path.posix.extname(file.path).toLowerCase();
+            const scriptKind = extension === '.tsx' ? ts.ScriptKind.TSX : extension === '.jsx' ? ts.ScriptKind.JSX : /^\.[cm]?ts$/.test(extension) ? ts.ScriptKind.TS : ts.ScriptKind.JS;
+            const ast = ts.createSourceFile(file.path, file.content, ts.ScriptTarget.Latest, true, scriptKind);
             const diagnostics = Reflect.get(ast, 'parseDiagnostics');
             if (Array.isArray(diagnostics) && diagnostics.length) {
                 context.limitations.push(`${file.path}: parser diagnostics; structure omitted`);
                 continue;
             }
+            context.limitations = context.limitations.filter(item => item !== `${file.path}: parser diagnostics; structure omitted`);
             const imports = [], declarations = new Map(), owners = new Map(), classes = new Map(), declarationNodes = new Map();
             const loc = (n) => [ast.getLineAndCharacterOfPosition(n.getStart(ast)).line + 1, ast.getLineAndCharacterOfPosition(n.end).line + 1];
             const visit = (node, owner, cls) => {

@@ -135,7 +135,8 @@ the final comment.
 
 ## Verification
 
-Run `node --test skills/reverse-design/tests/reverse-design.test.mjs` from the suite
-root. Tests cover selected-document and evidence validation, schema 1 compatibility,
+Installed bundles omit development tests. Inspect the generated HTML offline as
+described above. Run `node --test tests/skills/reverse-design/reverse-design.test.mjs`
+from the development checkout. Tests cover selected-document and evidence validation, schema 1 compatibility,
 safe Markdown, overview ordering, collapsed detail, offline browser navigation,
 focused Mermaid questions, shared browser use, and inline PR documents.

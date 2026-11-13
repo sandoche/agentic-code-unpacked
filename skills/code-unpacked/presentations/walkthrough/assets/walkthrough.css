@@ -2,3 +2,4 @@ html{scroll-behavior:smooth}body{min-height:100vh}button:disabled{opacity:.4;cur
 /* Preserve source text line breaks without adding blank visual rows between block lines. */
 .source-code code{white-space:normal}.source-code .line{white-space:pre}
 html[data-video] .source-code .line{white-space:pre-wrap;overflow-wrap:anywhere}
+.coverage-files>li{overflow-wrap:anywhere}

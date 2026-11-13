@@ -82,6 +82,7 @@ const initial = new Map(nodes.map(node => [node.id, { x: node.x, y: node.y }]));
 const elements = new Map<string, HTMLElement>(), groupLabels = new Map<string, HTMLElement>();
 const listItems = new Map([...document.querySelectorAll<HTMLElement>('#file-list li')].map(item => [item.dataset.file, item]));
 let view = { x: 20, y: 20, scale: 1 };
+let minimumScale = .12;
 let selected: string | undefined, selectedSymbol: string | undefined;
 type PointerStart = {
     pointerId: number;
@@ -538,7 +539,7 @@ for (const node of nodes) {
 }
 document.querySelectorAll<HTMLElement>('.file-select').forEach(button => button.addEventListener('click', () => select(required(byId.get(required(button.dataset.id))), true)));
 function zoom(factor: number, x = viewport.clientWidth / 2, y = viewport.clientHeight / 2): void {
-    const next = Math.min(2.5, Math.max(.12, view.scale * factor));
+    const next = Math.min(2.5, Math.max(minimumScale, view.scale * factor));
     view.x = x - (x - view.x) * next / view.scale;
     view.y = y - (y - view.y) * next / view.scale;
     view.scale = next;
@@ -550,7 +551,8 @@ function fit(): void {
         return;
     const minX = Math.min(...shown.map(node => node.x)), minY = Math.min(...shown.map(node => node.y));
     const maxX = Math.max(...shown.map(node => node.x + node.width)), maxY = Math.max(...shown.map(node => node.y + node.height));
-    view.scale = Math.min(1, Math.max(.12, Math.min((viewport.clientWidth - 50) / (maxX - minX), (viewport.clientHeight - 50) / (maxY - minY))));
+    view.scale = Math.min(1, (viewport.clientWidth - 50) / (maxX - minX), (viewport.clientHeight - 50) / (maxY - minY));
+    minimumScale = Math.min(.12, view.scale);
     view.x = (viewport.clientWidth - (maxX - minX) * view.scale) / 2 - minX * view.scale;
     view.y = (viewport.clientHeight - (maxY - minY) * view.scale) / 2 - minY * view.scale;
     transform();

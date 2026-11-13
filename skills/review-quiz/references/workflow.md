@@ -125,9 +125,12 @@ authorizes posting. Do not present local paths as remotely accessible attachment
 
 ## Verification
 
+Installed bundles omit development tests. Perform the browser checks above against
+the generated artifact. From the development checkout:
+
 ```sh
-node --test <skills-dir>/review-quiz/tests/review-quiz.test.mjs
-node --test <skills-dir>/review-quiz/tests/browser.test.mjs
+node --test tests/skills/review-quiz/review-quiz.test.mjs
+node --test tests/skills/review-quiz/browser.test.mjs
 ```
 
 Browser verification requires the suite's Playwright/Chromium (set up automatically on first use) setup. Rendering and

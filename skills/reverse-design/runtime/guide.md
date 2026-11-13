@@ -33,3 +33,14 @@ For PRs, prepare the comment and attachment workflow. Post only when the user re
 `node <core>/scripts/code-unpacked.mjs comment --context FILE --skill NAME --draft` prepares a local draft. To post after uploading, supply `--publish --attachments uploads.json`, mapping artifact names to actual GitHub attachment URLs. The publisher updates the matching comment owned by the current account and records its ID. It refuses missing attachment URLs. Use any available authenticated browser/file-upload capability. If browser uploads or authentication are unavailable, leave artifacts and drafts intact and report unpublished delivery. Never invent upload URLs. Uploading itself is a remote mutation; honor draft mode before uploading anything.
 
 Manifests record source/input hashes, output hashes, version, limitations, completion, and delivery separately. A generated artifact can be complete while delivery remains draft.
+
+HTML larger than 25 MiB is also saved as a lossless `.html.zip` attachment. Upload
+the ZIP selected by the draft and manifest, then extract it and open the original
+HTML locally. The original offline HTML remains in the artifact directory. Normal
+attachment size validation still applies to the ZIP; report delivery as unavailable
+if the archive itself exceeds the limit.
+
+Large PR comments use a compact, explicitly labeled summary rather than cutting
+through document Markdown or Mermaid diagrams. Complete authored Markdown stays in
+`comment-content.json`, and complete documents remain in the HTML. The publisher
+reserves space for the actual uploaded attachment links within its comment budget.
