@@ -14,9 +14,12 @@ const entry = await getEntry("pages", "home");
 if (!entry) throw new Error("Site content is missing");
 const content = entry.data;
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
-const socialImage = new URL(image, Astro.site).href;
 const preview =
   import.meta.env.CONTEXT === "deploy-preview" || import.meta.env.CONTEXT === "branch-deploy";
+const imageOrigin = preview
+  ? process.env.DEPLOY_PRIME_URL || process.env.DEPLOY_URL || Astro.site
+  : Astro.site;
+const socialImage = new URL(image, imageOrigin).href;
 const structured = articleDate
   ? {
       "@context": "https://schema.org",

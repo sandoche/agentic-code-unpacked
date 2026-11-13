@@ -79,8 +79,10 @@
       "excerpt": false,
       "originalArtifact": "https://github.com/user-attachments/files/34807583/silk-pr-3079-walkthrough.html",
       "src": "/examples/silk-walkthrough/index.html",
-      "bytes": 144568,
-      "sha256": "bbace1684cef066c06563e39bc3e741c7568645bcbd10e6be3486f0d9d7c4bb2"
+      "bytes": 144675,
+      "sha256": "235f8f71381c926fc65d168aad2ee272fb7f0b0bfd3ea9dfef7f992b21d3931d",
+      "originalSha256": "bbace1684cef066c06563e39bc3e741c7568645bcbd10e6be3486f0d9d7c4bb2",
+      "presentationFix": "Wrap revision IDs and source coverage on narrow screens; walkthrough content and controls are unchanged."
     },
     {
       "id": "silk-quiz",
@@ -91,8 +93,10 @@
       "excerpt": false,
       "originalArtifact": "https://github.com/user-attachments/files/34807582/silk-pr-3079-review-quiz.html",
       "src": "/examples/silk-quiz/index.html",
-      "bytes": 116291,
-      "sha256": "0c317224048ed0505f3b71f66ac05ab6c40a5459e2516b79b2d12e6ef9c8a250"
+      "bytes": 116382,
+      "sha256": "8eb02212fd4a86ea1ab211af76603ccd9dd6e6c2e234bad3518f3cea0e842c2e",
+      "originalSha256": "0c317224048ed0505f3b71f66ac05ab6c40a5459e2516b79b2d12e6ef9c8a250",
+      "presentationFix": "Wrap coverage revision IDs on narrow screens; questions and grading are unchanged."
     },
     {
       "id": "vue-design",
@@ -127,8 +131,10 @@
       "excerpt": false,
       "originalArtifact": "https://github.com/sandoche/core/raw/0da36b0a452a16ab72a127f0bf6c00db29954e7e/code-unpacked-artifacts/walkthrough.html.zip",
       "src": "/examples/vue-walkthrough/index.html",
-      "bytes": 1309708,
-      "sha256": "840836e05ef41c3b320ff0165e79944b3e997594cd9c7ea8c90475ade54a96df"
+      "bytes": 1309814,
+      "sha256": "71792c551706bf8f8f3d8ae9c0df0a73a5d0076477166f6d6bcdbcc994bea33a",
+      "originalSha256": "840836e05ef41c3b320ff0165e79944b3e997594cd9c7ea8c90475ade54a96df",
+      "presentationFix": "Wrap revision IDs and source coverage on narrow screens; walkthrough content and controls are unchanged."
     },
     {
       "id": "react-walkthrough",
@@ -139,8 +145,10 @@
       "excerpt": false,
       "originalArtifact": "https://github.com/sandoche/react/raw/4c2bbc612a301bebd20c760a7486beefd8315ac2/code-unpacked-artifacts/walkthrough.html.zip",
       "src": "/examples/react-walkthrough/index.html",
-      "bytes": 4440087,
-      "sha256": "047c87928dcf7dfb2dc24993cbcbc31f7f2f9c0a17d6111bdb850b94bc3b807e"
+      "bytes": 4440195,
+      "sha256": "3ebd47d41d3ed64d33c0925fda5dfedadb28b0cda5520a4143c53b9d08216864",
+      "originalSha256": "047c87928dcf7dfb2dc24993cbcbc31f7f2f9c0a17d6111bdb850b94bc3b807e",
+      "presentationFix": "Wrap revision IDs and source coverage on narrow screens; walkthrough content and controls are unchanged."
     },
     {
       "id": "react-map",
@@ -151,8 +159,10 @@
       "excerpt": true,
       "originalArtifact": "https://github.com/sandoche/react/raw/4c2bbc612a301bebd20c760a7486beefd8315ac2/code-unpacked-artifacts/code-map.html.zip",
       "src": "/examples/react-map/index.html",
-      "bytes": 1207261,
-      "sha256": "f4c60a76fe1dfdf74d9944f32b2536bf6623cc1d580e5943d82a85586d35ffc7"
+      "bytes": 1207349,
+      "sha256": "ec5583280e0b5c44379e084698e49a8b64b0289f36a0835a7979d28a41527ff8",
+      "originalSha256": "f4c60a76fe1dfdf74d9944f32b2536bf6623cc1d580e5943d82a85586d35ffc7",
+      "presentationFix": "Wrap source-provenance text on narrow screens."
     },
     {
       "id": "react-comic",

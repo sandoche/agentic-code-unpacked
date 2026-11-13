@@ -10,7 +10,7 @@ The three runs are Silk's actual PR and the sandoche/core and sandoche/react sho
 
 ## Real examples
 
-examples/provenance.json records eight committed HTML viewers with hashes, byte counts, source pins and explicit excerpt scope. Six are exact published outputs. The two React excerpts use the canonical skill renderers and bounded inputs. See examples/README.md for reproduction and scope. No GitHub requests, agent calls or image generation happen during a production build or visitor session.
+examples/provenance.json records eight committed HTML viewers with hashes, byte counts, source pins and explicit excerpt scope. Two are exact published outputs; the three walkthroughs and Silk quiz have traceable CSS-only mobile fixes. The two React excerpts use the canonical skill renderers and bounded inputs. See examples/README.md for reproduction and scope. Production builds and page loads do not fetch GitHub data, call agents or generate images.
 
 The surrounding website does not recreate quiz, map or walkthrough controls: the actual viewers run inside visually isolated iframes. They load lazily and offer full-size links. Full large bundles remain linked downloads.
 

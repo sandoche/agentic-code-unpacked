@@ -6,6 +6,7 @@
     "dist/",
     "public/examples/",
     "examples/inputs/",
+    "examples/originals/",
     "examples/.rendered/"
   ]
 }

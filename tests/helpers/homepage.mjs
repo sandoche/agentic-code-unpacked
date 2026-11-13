@@ -83,6 +83,7 @@ export async function checkHomepage(browser,url,{screenshots}={}){
    assert.equal(await page.locator('meta[name="twitter:card"]').getAttribute('content'),'summary_large_image');
    assert.equal(await page.locator('meta[property="og:type"]').getAttribute('content'),route==='/showcase/'||route==='/'?'website':'article');
    const imageUrl=await page.locator('meta[property="og:image"]').getAttribute('content');images.add(imageUrl);
+   assert.equal(new URL(imageUrl).origin,'https://codeunpacked.san.cx','production sharing images stay on production');
    const response=await page.request.get(url+new URL(imageUrl).pathname);assert.equal(response.status(),200);
    const png=await response.body();assert.equal(png.readUInt32BE(16),1200);assert.equal(png.readUInt32BE(20),630);
    assert.equal(await page.locator('meta[property="og:image:alt"]').count(),1);

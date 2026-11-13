@@ -28,7 +28,13 @@ const caseSlug =
   ></iframe>
   <figcaption>
     <p>
-      <strong>{example.excerpt ? "Real run, excerpt." : "Original published viewer."}</strong>{" "}
+      <strong>
+        {example.excerpt
+          ? "Real run, excerpt."
+          : example.presentationFix
+            ? "Published run, mobile layout fixed."
+            : "Original published viewer."}
+      </strong>{" "}
       {example.scope}
     </p>
     <div>

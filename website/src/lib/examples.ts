@@ -33,6 +33,11 @@ export const inventorySchema = z
         src: z.string().startsWith("/examples/"),
         scope: z.string(),
         excerpt: z.boolean(),
+        presentationFix: z.string().optional(),
+        originalSha256: z
+          .string()
+          .regex(/^[a-f0-9]{64}$/)
+          .optional(),
         originalArtifact: url,
         sha256: z.string().regex(/^[a-f0-9]{64}$/),
         bytes: z.number().int().positive(),

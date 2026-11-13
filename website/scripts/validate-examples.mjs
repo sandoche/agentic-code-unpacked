@@ -22,6 +22,23 @@ for (const example of inventory.examples) {
     bytes.toString().includes(inventory.runs[example.run].sourceHead),
     example.id + " source revision",
   );
+  if (example.presentationFix) {
+    const css = (
+      await readFile(path.join(root, "examples/mobile-fixes", example.id + ".css"), "utf8")
+    ).trim();
+    const patch = '<style data-website-mobile-fix="' + example.id + '">' + css + "</style>";
+    assert.equal(
+      bytes.toString().split(patch).length,
+      2,
+      example.id + " has one recorded layout patch",
+    );
+    const original = bytes.toString().replace(patch, "");
+    assert.equal(
+      createHash("sha256").update(original).digest("hex"),
+      example.originalSha256,
+      example.id + " content is unchanged outside the CSS patch",
+    );
+  }
   if (["react", "vue"].includes(example.run)) {
     const repo = inventory.runs[example.run].repository;
     assert.ok(example.originalArtifact.startsWith("https://github.com/" + repo + "/raw/"));
