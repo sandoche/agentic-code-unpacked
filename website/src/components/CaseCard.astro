@@ -1,0 +1,24 @@
+---
+import type { CollectionEntry } from "astro:content";
+import { getRun, number } from "../lib/examples";
+interface Props {
+  entry: CollectionEntry<"caseStudies">;
+}
+const { entry } = Astro.props;
+const run = getRun(entry.data.run);
+---
+
+<article class={"case-card case-" + entry.data.run}>
+  <div class="case-number">
+    {number(run.stats.files)}
+    <span>source files</span>
+  </div>
+  <p class="case-project">{run.name}</p>
+  <h3>
+    <a href={"/showcase/" + entry.id + "/"}>{entry.data.title}</a>
+  </h3>
+  <p>{entry.data.description}</p>
+  <a class="case-read" href={"/showcase/" + entry.id + "/"}>
+    Read the run <span aria-hidden="true">↗</span>
+  </a>
+</article>

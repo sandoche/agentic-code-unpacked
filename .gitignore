@@ -1,4 +1,5 @@
 node_modules/
+website/examples/.rendered/
 .astro/
 dist/
 .code-unpacked/

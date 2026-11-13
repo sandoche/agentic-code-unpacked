@@ -4,7 +4,10 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build && node ../scripts/publish-skills.mjs",
+    "build": "node scripts/validate-examples.mjs && astro build && node ../scripts/publish-skills.mjs",
+    "examples:check": "node scripts/validate-examples.mjs",
+    "examples:render": "node examples/render-excerpts.mjs",
+    "assets:brand": "node scripts/generate-brand-assets.mjs",
     "preview": "astro preview",
     "check": "pnpm run lint && pnpm run typecheck && pnpm run format:check",
     "lint": "oxlint --deny-warnings",
