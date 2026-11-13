@@ -45,9 +45,12 @@ export async function analyzeStructure(original: Context): Promise<Context>{
   for(const file of context.files){
     if(typeof file.content!=='string')continue;if(file.selectedRange){context.limitations.push(file.path+': structural extraction omitted for selected line range; only selected source is retained');continue;}
     if(jsExtensions.test(file.path)){
-      const ast=ts.createSourceFile(file.path,file.content,ts.ScriptTarget.Latest,true,/x$/.test(file.path)?ts.ScriptKind.TSX:ts.ScriptKind.JS);
+      const extension=path.posix.extname(file.path).toLowerCase();
+      const scriptKind=extension==='.tsx'?ts.ScriptKind.TSX:extension==='.jsx'?ts.ScriptKind.JSX:/^\.[cm]?ts$/.test(extension)?ts.ScriptKind.TS:ts.ScriptKind.JS;
+      const ast=ts.createSourceFile(file.path,file.content,ts.ScriptTarget.Latest,true,scriptKind);
       const diagnostics: unknown=Reflect.get(ast,'parseDiagnostics');
       if(Array.isArray(diagnostics)&&diagnostics.length){context.limitations.push(`${file.path}: parser diagnostics; structure omitted`);continue;}
+      context.limitations=context.limitations.filter(item=>item!==`${file.path}: parser diagnostics; structure omitted`);
       const imports: JsImport[]=[],declarations=new Map<string,Symbol>(),owners=new Map<object,Owner>(),classes=new Map<string,Symbol>(),declarationNodes=new Map<TS.Node,Symbol>();
       const loc=(n: TS.Node): [number,number]=>[ast.getLineAndCharacterOfPosition(n.getStart(ast)).line+1,ast.getLineAndCharacterOfPosition(n.end).line+1];
       const visit=(node: TS.Node,owner?: Symbol,cls?: string): void=>{

@@ -13,6 +13,7 @@ import { readFile, writeFile, mkdir, stat, realpath } from 'node:fs/promises';
 import { execFile, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
 import { importDependency, resolveDependency, ensureDependencies, withFileLock, runProcess } from './dependencies.mjs';
+import { zipHtml } from './archive.mjs';
 
 export const VERSION='0.3.0';
 const exec=promisify(execFile);
@@ -79,25 +80,42 @@ async function gitBatch(root: string,specs: string[],check=false): Promise<Buffe
 }
 async function hydrateGitFiles(root: string,files: CapturedFile[],source: Pick<Source, "head" | "base">): Promise<void>{
   const requests: { file: CapturedFile; side: "head" | "base"; spec: string }[]=[];
-  for(const file of files){if(excluded(file.path)){file.omission='Excluded sensitive/generated path';file.hunks=[];continue;}if(metadataOnly(file.path)){file.omission='Lockfile metadata only';file.hunks=[];continue;}for(const side of ['head','base'] as const){if(side==='head'&&file.status==='deleted'||side==='base'&&file.status==='added')continue;requests.push({file,side,spec:`${source[side]}:${side==='base'?file.oldPath:file.path}`});}}
-  const info=(await gitBatch(root,requests.map(r=>r.spec),true)).toString('utf8').trimEnd().split('\n');const readable: typeof requests=[];
-  requests.forEach((request,index)=>{const line=info[index]||'';if(line.endsWith(' missing'))return;const size=Number(line.split(' ')[2]);if(!Number.isFinite(size))return;if(size>512000){request.file.omission='Source exceeds 512 KB';return;}readable.push(request);});
-  const bytes=await gitBatch(root,readable.map(r=>r.spec));let offset=0;
-  for(const request of readable){const end=bytes.indexOf(10,offset);if(end<0)throw Error('Truncated git source batch header');const header=bytes.subarray(offset,end).toString();const size=Number(header.split(' ')[2]);if(!Number.isFinite(size)||end+1+size>=bytes.length)throw Error('Truncated git source batch');const content=bytes.subarray(end+1,end+1+size);offset=end+1+size+1;if(content.includes(0)){request.file.binary=true;request.file.omission='Binary source';}else request.file[request.side==='head'?'content':'baseContent']=redact(content.toString('utf8'));}
+  for(const file of files){if(excluded(file.path)){file.omission='Excluded sensitive/generated path';file.hunks=[];continue;}if(metadataOnly(file.path)){file.omission='Lockfile metadata only';file.hunks=[];continue;}for(const side of ['head','base'] as const){if(!source[side]||side==='head'&&file.status==='deleted'||side==='base'&&file.status==='added')continue;requests.push({file,side,spec:`${source[side]}:${side==='base'?file.oldPath:file.path}`});}}
+  const info=(await gitBatch(root,requests.map(r=>r.spec),true)).toString('utf8').trimEnd().split('\n');
+  const batches: (typeof requests)[]=[];let batch: typeof requests=[],batchBytes=0;
+  requests.forEach((request,index)=>{const line=info[index]||'';if(line.endsWith(' missing')){request.file.omission=`Source unavailable (${request.side})`;return;}const size=Number(line.split(' ')[2]);if(!Number.isSafeInteger(size)||size<0)throw Error('Invalid git source batch metadata');if(size>512000){request.file.omission='Source exceeds 512 KB';return;}
+    // Bound temporary buffers by blob sizes, without truncating the file inventory.
+    if(batch.length&&batchBytes+size+128>8*1024*1024){batches.push(batch);batch=[];batchBytes=0;}batch.push(request);batchBytes+=size+128;
+  });
+  if(batch.length)batches.push(batch);
+  for(const requests of batches){const bytes=await gitBatch(root,requests.map(r=>r.spec));let offset=0;
+    for(const request of requests){const end=bytes.indexOf(10,offset);if(end<0)throw Error('Truncated git source batch header');const header=bytes.subarray(offset,end).toString();const size=Number(header.split(' ')[2]);if(!Number.isFinite(size)||end+1+size>=bytes.length)throw Error('Truncated git source batch');const content=bytes.subarray(end+1,end+1+size);offset=end+1+size+1;if(content.includes(0)){request.file.binary=true;request.file.omission='Binary source';}else request.file[request.side==='head'?'content':'baseContent']=redact(content.toString('utf8'));}
+  }
 }
 const excluded=(p: string): boolean=>/(^|\/)(?:node_modules|vendor|\.git|\.code-unpacked|dist|build|coverage|\.astro)(\/|$)/.test(p)||/(^|\/)\.env(?:$|\.(?!example$|dist$))/.test(p)||/\.(?:pem|key|p12|pfx)$/i.test(p);
 const metadataOnly=(p: string): boolean=>/(?:^|\/)(?:pnpm-lock\.yaml|package-lock\.json|yarn\.lock|composer\.lock)$/.test(p);
+function decodeGitPath(value: string): string{
+  if(!value.startsWith('"'))return value;
+  const quoted=value.slice(1,-1),chunks: Buffer[]=[];let offset=0;
+  const escapes: Record<string,string>={a:'\x07',b:'\b',f:'\f',n:'\n',r:'\r',t:'\t',v:'\v','\\':'\\','"':'"'};
+  for(const match of quoted.matchAll(/\\([0-7]{1,3}|[abfnrtv\\"])/g)){
+    chunks.push(Buffer.from(quoted.slice(offset,match.index),'utf8'));
+    const escaped=present(match[1]);chunks.push(/^[0-7]/.test(escaped)?Buffer.from([Number.parseInt(escaped,8)]):Buffer.from(present(escapes[escaped]),'utf8'));
+    offset=match.index+match[0].length;
+  }
+  chunks.push(Buffer.from(quoted.slice(offset),'utf8'));return Buffer.concat(chunks).toString('utf8');
+}
 export function parseDiff(diff: unknown): CapturedFile[]{
   const files: CapturedFile[]=[];let file: CapturedFile | undefined,hunk: Hunk | undefined,oldLine=0,newLine=0;
   for(const line of String(diff).split('\n')){
     if(line.startsWith('diff --git ')){
-      const m=/^diff --git (?:"a\/(.*?)"|a\/(.*?)) (?:"b\/(.*?)"|b\/(.*))$/.exec(line);
-      if(!m)continue;file={path:present(m[3]??m[4]),oldPath:present(m[1]??m[2]),status:'modified',hunks:[],binary:false};files.push(file);hunk=undefined;
+      const m=/^diff --git ("a\/(?:[^"\\]|\\.)*"|a\/.*?) ("b\/(?:[^"\\]|\\.)*"|b\/.*)$/.exec(line);
+      if(!m)continue;file={path:decodeGitPath(present(m[2])).slice(2),oldPath:decodeGitPath(present(m[1])).slice(2),status:'modified',hunks:[],binary:false};files.push(file);hunk=undefined;
     }else if(!file)continue;
     else if(line.startsWith('new file mode'))file.status='added';
     else if(line.startsWith('deleted file mode'))file.status='deleted';
-    else if(line.startsWith('rename from ')){file.oldPath=line.slice(12);file.status='renamed';}
-    else if(line.startsWith('rename to '))file.path=line.slice(10);
+    else if(line.startsWith('rename from ')){file.oldPath=decodeGitPath(line.slice(12));file.status='renamed';}
+    else if(line.startsWith('rename to '))file.path=decodeGitPath(line.slice(10));
     else if(line.startsWith('Binary files ')||line==='GIT binary patch')file.binary=true;
     else if(line.startsWith('@@ ')){
       const m=/^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@(.*)/.exec(line);if(!m)continue;
@@ -239,9 +257,24 @@ export function renderShell({title,body,css='',script='',data,lang='en'}: ShellO
 }
 export async function readJson(file: string): Promise<unknown>{return JSON.parse(await readFile(file,'utf8'));}
 export async function writeJson(file: string,value: unknown): Promise<void>{await mkdir(path.dirname(file),{recursive:true});await writeFile(file,JSON.stringify(value,null,2)+'\n');}
-export const deliveryArtifacts=(outputs: string[]): string[]=>outputs.filter(file=>!file.includes('/')&&!file.includes('\\')&&/\.(?:html|png|mp4|zip)$/i.test(file));
-export function makeComment({skill,context,summary='',attachments=[],markdown=''}: CommentOptions): string{
-  return `<!-- code-unpacked:${skill} -->\n## Code Unpacked · ${skill}\n\n${summary}\n\nSource revision: \`${context.source.head}\`\n\n${markdown}${markdown?'\n\n':''}${attachments.length?'Local attachments to upload before posting:\n\n'+attachments.map(file=>`- \`${file}\``).join('\n')+'\n\nDownload the HTML attachment and open it locally.\n\n':''}${context.limitations?.length?'<details><summary>Source coverage limitations</summary>\n\n'+context.limitations.map(x=>`- ${redact(x)}`).join('\n')+'\n\n</details>\n':''}`;
+export const deliveryArtifacts=(outputs: string[]): string[]=>outputs.filter(file=>!file.includes('/')&&!file.includes('\\')&&/\.(?:html|png|mp4|zip)$/i.test(file)&&!(/\.html$/i.test(file)&&outputs.includes(file+'.zip')));
+export function makeComment({skill,context,summary='',attachments=[],markdown='',maxLength=60000}: CommentOptions): string{
+  if(!Number.isSafeInteger(maxLength)||maxLength<1024||maxLength>60000)throw Error('Comment attachment links exceed the available GitHub comment budget');
+  const header=`<!-- code-unpacked:${skill} -->\n## Code Unpacked · ${skill}\n\n`;
+  const revision=`Source revision: \`${context.source.head}\`\n\n`;
+  const uploads=attachments.length?'Local attachments to upload before posting:\n\n'+attachments.map(file=>`- \`${file}\``).join('\n')+`\n\n${attachments.some(file=>/\.html\.zip$/i.test(file))?'Download the ZIP, extract it, and open the HTML locally.':'Download the HTML attachment and open it locally.'}\n\n`:'';
+  const limitations=context.limitations||[];
+  const complete=header+summary+'\n\n'+revision+markdown+(markdown?'\n\n':'')+uploads+(limitations.length?'<details><summary>Source coverage limitations</summary>\n\n'+limitations.map(x=>`- ${redact(x)}`).join('\n')+'\n\n</details>\n':'');
+  if(complete.length<=maxLength)return complete;
+  // Replace the complete Markdown block instead of cutting through a Mermaid fence.
+  let compact=header+(summary.length<Math.min(2000,maxLength/4)?summary+'\n\n':'')+revision+'The full inline explanation exceeds the comment budget. Complete documents, diagrams, and source coverage are preserved in the HTML attachment (extract the ZIP first when supplied).\n\n'+uploads;
+  if(limitations.length){
+    const entries: string[]=[];let length=compact.length+400;
+    for(const limitation of limitations){const entry=`- ${redact(limitation)}`;if(length+entry.length+1>maxLength)break;entries.push(entry);length+=entry.length+1;}
+    compact+='<details><summary>Source coverage limitations</summary>\n\n'+entries.join('\n')+`\n\n${entries.length} of ${limitations.length} source limitations shown. The complete list is retained in the artifact manifest and HTML.\n\n</details>\n`;
+  }
+  if(compact.length>maxLength)throw Error('Comment metadata exceeds the available GitHub comment budget');
+  return compact;
 }
 export function validateUploads(artifacts: Pick<Artifact, "path" | "bytes">[],value: unknown): Record<string,string>{
   const uploads=stringMap(value);
@@ -253,7 +286,14 @@ export async function writeManifest(dir: string,{skill,context,outputs,status='c
   const manifest={schemaVersion:1,skill,version:VERSION,source:context.source,target:context.target,inputs:{contextHash:hash(JSON.stringify(context))},artifacts,status,limitations:[...(context.limitations||[]),...limitations],delivery};await writeJson(path.join(dir,'manifest.json'),manifest);return manifest;
 }
 export async function finishArtifact({dir,skill,context,outputs,summary='',markdown='',status='complete',limitations=[]}: FinishOptions): Promise<Manifest>{
-  await mkdir(dir,{recursive:true});await writeJson(path.join(dir,'comment-content.json'),{summary,markdown});await writeFile(path.join(dir,'comment.md'),makeComment({skill,context,summary,markdown,attachments:deliveryArtifacts(outputs)}));return writeManifest(dir,{skill,context,outputs:[...outputs,'comment.md','comment-content.json'],status,limitations});
+  await mkdir(dir,{recursive:true});const packaged: string[]=[];
+  for(const file of deliveryArtifacts(outputs).filter(file=>/\.html$/i.test(file))){
+    const absolute=path.resolve(dir,file);if(!absolute.startsWith(path.resolve(dir)+path.sep))throw Error('Artifact path escapes output directory');
+    if((await stat(absolute)).size>25*1024*1024){const archive=file+'.zip';await writeFile(path.join(dir,archive),await zipHtml(file,await readFile(absolute)));packaged.push(archive);}
+  }
+  const artifacts=[...new Set([...outputs,...packaged])];
+  if(packaged.length)markdown+=`${markdown?'\n\n':''}Large HTML is attached as ${packaged.map(file=>`\`${file}\``).join(', ')}. Download the ZIP, extract it, and open the original HTML locally; the complete source snapshot is retained.`;
+  await writeJson(path.join(dir,'comment-content.json'),{summary,markdown});await writeFile(path.join(dir,'comment.md'),makeComment({skill,context,summary,markdown,attachments:deliveryArtifacts(artifacts)}));return writeManifest(dir,{skill,context,outputs:[...artifacts,'comment.md','comment-content.json'],status,limitations});
 }
 export async function loadBrowser(): Promise<Browser>{
   const { chromium } = await importDependency('playwright');

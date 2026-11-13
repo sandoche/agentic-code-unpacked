@@ -51,7 +51,8 @@ async function main() {
             const uploaded = validateUploads(attachments, await readJson(attachmentFile));
             if (manifest.inputs.contextHash !== hash(JSON.stringify(context)))
                 throw Error('Source context changed since rendering; regenerate before publishing');
-            comment = makeComment({ skill, context, summary, markdown }) + '\n' + attachments.map(item => /\.png$/.test(item.path) ? `![${skill}](${uploaded[item.path]})` : `[Download ${item.path}](${uploaded[item.path]})`).join('\n\n') + '\n';
+            const links = attachments.map(item => /\.png$/.test(item.path) ? `![${skill}](${uploaded[item.path]})` : `[Download ${item.path}](${uploaded[item.path]})`).join('\n\n');
+            comment = makeComment({ skill, context, summary, markdown, maxLength: 60000 - links.length - 2 }) + '\n' + links + '\n';
             if (context.target.kind !== 'pr')
                 throw Error('Comments require a PR target');
             const endpoint = `repos/${context.target.repo}/issues/${context.target.number}/comments`;

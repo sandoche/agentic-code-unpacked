@@ -91,7 +91,7 @@ export interface ArtifactOptions {
 }
 export interface FinishOptions extends ArtifactOptions { dir: string; summary?: string; markdown?: string }
 export interface ShellOptions { title: string; body: string; css?: string; script?: string; data?: unknown; lang?: string }
-export interface CommentOptions { skill: string; context: Context; summary?: string; attachments?: string[]; markdown?: string }
+export interface CommentOptions { skill: string; context: Context; summary?: string; attachments?: string[]; markdown?: string; maxLength?: number }
 export interface ResolvedEvidence extends Evidence { path: string; text: string }
 
 export interface Snippet { evidence: string; label?: string; side?: string; focusLines?: number[] }

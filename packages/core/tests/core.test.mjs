@@ -1,10 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, readFile, unlink } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, unlink, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { deliveryArtifacts, VERSION, safeName, parseTarget, outputDirectory, redact, parseDiff, validateContext, resolveEvidence, captureLocal, capturePr, capturePinnedPr, makeComment, writeManifest, validateUploads, escapeHtml, jsonForHtml } from '../scripts/core.mjs';
+import { crc32, inflateRawSync } from 'node:zlib';
+import { deliveryArtifacts, VERSION, safeName, parseTarget, outputDirectory, redact, parseDiff, validateContext, resolveEvidence, captureLocal, capturePr, capturePinnedPr, addContextFiles, makeComment, writeManifest, finishArtifact, validateUploads, escapeHtml, jsonForHtml } from '../scripts/core.mjs';
 
 test('scope parsing and collision-safe output paths', () => {
   assert.equal(parseTarget(['pr','https://github.com/acme/app/pull/42']).repo, 'acme/app');
@@ -39,6 +40,31 @@ test('diff parser retains paths, statuses and both source line numbers', () => {
   assert.equal(files[0].hunks[0].lines[1].oldLine,3);
   assert.equal(files[1].status,'renamed');
   assert.equal(files[2].binary,true);
+});
+
+test('diff parser decodes Git quoted UTF-8 and escaped rename paths', () => {
+  const files=parseDiff('diff --git "a/functionexpr\\342\\200\\223conditional-access.js" "b/functionexpr\\342\\200\\223conditional-access.js"\n@@ -1 +1 @@\n-old\n+new\ndiff --git "a/old\\tname.js" "b/new\\tname.js"\nsimilarity index 100%\nrename from "old\\tname.js"\nrename to "new\\tname.js"\n');
+  assert.equal(files[0].path,'functionexpr–conditional-access.js');
+  assert.equal(files[0].oldPath,files[0].path);
+  assert.equal(files[1].oldPath,'old\tname.js');assert.equal(files[1].path,'new\tname.js');
+  assert.equal(files[1].status,'renamed');
+});
+
+test('pinned capture hydrates real Unicode paths rather than silently missing quoted objects', async t => {
+  const dir=await mkdtemp(path.join(tmpdir(),'unpacked-unicode-pr-'));
+  t.after(()=>rm(dir,{recursive:true,force:true}));
+  const git=(...args)=>execFileSync('git',args,{cwd:dir,encoding:'utf8',windowsHide:true}).trim();
+  git('init');git('config','user.email','test@example.test');git('config','user.name','Test');git('config','core.quotePath','true');
+  const name='functionexpr–conditional-access.js';
+  await writeFile(path.join(dir,name),'before\n');await writeFile(path.join(dir,'context.js'),'unchanged\n');git('add','.');git('commit','-m','base');const base=git('rev-parse','HEAD');
+  await writeFile(path.join(dir,name),'after\n');git('add','.');git('commit','-m','head');const head=git('rev-parse','HEAD');
+  const context=await capturePinnedPr({kind:'pr',number:42,repo:'acme/app'},{base,head,title:'Unicode recorded fixture'},dir);
+  assert.deepEqual(context.files.map(file=>file.path),[name]);
+  assert.equal(context.files[0].content,'after\n');assert.equal(context.files[0].baseContent,'before\n');
+  assert.equal(context.evidence.length,2);assert.ok(context.evidence.every(item=>item.url.includes('functionexpr%E2%80%93conditional-access.js')));
+  const expanded=await addContextFiles(context,dir,['context.js']);
+  const unchanged=expanded.files.find(file=>file.path==='context.js');
+  assert.equal(unchanged.content,'unchanged\n');assert.equal(unchanged.omission,undefined,'head-only context does not require a base snapshot');
 });
 
 test('evidence references resolve and malformed ranges fail', () => {
@@ -76,6 +102,30 @@ test('codebase records dirty state and selected ranges without changing checkout
   const pinned=await capturePinnedPr({kind:'pr',number:42,repo:'acme/app'},{base:headOfFixture(),head:headOfFixture(),title:'Fixture'},dir);
   assert.equal(pinned.target.kind,'pr');assert.equal(pinned.files.length,0);
   function headOfFixture(){return git('rev-parse','HEAD');}
+});
+
+test('pinned capture retains all source when valid blobs exceed one aggregate batch', async t => {
+  const dir=await mkdtemp(path.join(tmpdir(),'unpacked-large-pr-'));
+  t.after(()=>rm(dir,{recursive:true,force:true}));
+  const git=(...args)=>execFileSync('git',args,{cwd:dir,encoding:'utf8',windowsHide:true}).trim();
+  git('init');git('config','user.email','test@example.test');git('config','user.name','Test');
+  const body=('x'.repeat(79)+'\n').repeat(6000);
+  const names=Array.from({length:72},(_,i)=>`source-${i}.txt`);
+  const before='before\n'+body,after='after\n'+body;
+  assert.ok(Buffer.byteLength(before)<512000);
+  assert.ok(names.length*(Buffer.byteLength(before)+Buffer.byteLength(after))>64*1024*1024);
+  await Promise.all(names.map(name=>writeFile(path.join(dir,name),before)));
+  git('add','.');git('commit','-m','base');const base=git('rev-parse','HEAD');
+  await Promise.all(names.map(name=>writeFile(path.join(dir,name),after)));
+  git('add','.');git('commit','-m','head');const head=git('rev-parse','HEAD');
+  const context=await capturePinnedPr({kind:'pr',number:42,repo:'acme/app'},{base,head,title:'Large recorded fixture'},dir);
+  assert.equal(context.files.length,names.length);
+  assert.equal(context.evidence.length,names.length*2);
+  assert.equal(context.source.head,head);assert.equal(context.source.base,base);
+  for(const file of context.files){
+    assert.equal(file.content,after);assert.equal(file.baseContent,before);
+    assert.equal(file.omission,undefined);
+  }
 });
 
 test('HTML boundaries and draft delivery never invent uploaded URLs', async () => {
@@ -120,3 +170,48 @@ test('publication rejects missing or oversized attachments before any remote act
 });
 
 test('delivery includes final media without duplicated source artwork',()=>{assert.deepEqual(deliveryArtifacts(['index.html','comic-01.png','artwork/source.png','storyboard.json','walkthrough.mp4']),['index.html','comic-01.png','walkthrough.mp4']);});
+
+test('large offline HTML is losslessly packaged for delivery with truthful attachment names', async t=>{
+  const dir=await mkdtemp(path.join(tmpdir(),'unpacked-large-html-'));
+  t.after(()=>rm(dir,{recursive:true,force:true}));
+  const source=Buffer.from('<!doctype html><title>Large map</title>'+ 'source snapshot\n'.repeat(1800000));
+  await writeFile(path.join(dir,'index.html'),source);
+  const context={target:{kind:'pr',number:42,repo:'acme/app'},source:{head:'a'.repeat(40)},limitations:[]};
+  const manifest=await finishArtifact({dir,skill:'code-map',context,outputs:['index.html'],summary:'Complete map'});
+  const selected=deliveryArtifacts(manifest.artifacts.map(item=>item.path));
+  assert.deepEqual(selected,['index.html.zip']);
+  assert.deepEqual(await readFile(path.join(dir,'index.html')),source,'the original offline HTML must remain intact');
+  const archive=await readFile(path.join(dir,'index.html.zip'));
+  assert.equal(archive.readUInt32LE(0),0x04034b50);
+  assert.equal(archive.readUInt16LE(8),8,'ZIP uses standard DEFLATE');
+  const filenameLength=archive.readUInt16LE(26),compressedSize=archive.readUInt32LE(18),start=30+filenameLength;
+  assert.equal(archive.subarray(30,start).toString(),'index.html');
+  const extracted=inflateRawSync(archive.subarray(start,start+compressedSize));
+  assert.deepEqual(extracted,source);assert.equal(crc32(extracted),archive.readUInt32LE(14));
+  const end=archive.length-22,central=archive.readUInt32LE(end+16);
+  assert.equal(archive.readUInt32LE(end),0x06054b50);assert.equal(archive.readUInt32LE(central),0x02014b50);
+  assert.equal(archive.readUInt32LE(central+24),source.length);
+  const attachments=manifest.artifacts.filter(item=>selected.includes(item.path));
+  validateUploads(attachments,{'index.html.zip':'https://github.com/user-attachments/files/123/index.html.zip'});
+  const comment=await readFile(path.join(dir,'comment.md'),'utf8');
+  assert.match(comment,/extract it/);assert.match(comment,/`index\.html\.zip`/);
+  const small=await mkdtemp(path.join(tmpdir(),'unpacked-small-html-'));t.after(()=>rm(small,{recursive:true,force:true}));
+  await writeFile(path.join(small,'index.html'),'small');
+  const normal=await finishArtifact({dir:small,skill:'code-map',context,outputs:['index.html']});
+  assert.deepEqual(deliveryArtifacts(normal.artifacts.map(item=>item.path)),['index.html']);
+});
+
+test('large PR comments preserve full Markdown locally and bound published summaries including URLs',async t=>{
+  const dir=await mkdtemp(path.join(tmpdir(),'unpacked-large-comment-'));t.after(()=>rm(dir,{recursive:true,force:true}));
+  const context={target:{kind:'pr',number:42,repo:'acme/app'},source:{head:'a'.repeat(40)},limitations:Array.from({length:1000},(_,i)=>`source-${i}: ${'coverage gap '.repeat(20)}`)};
+  const markdown='## Complete design\n\n'+('```mermaid\ngraph LR\n A-->B\n```\n\n').repeat(2500);
+  await writeFile(path.join(dir,'index.html'),'<!doctype html><title>Complete design</title>');
+  await finishArtifact({dir,skill:'reverse-design',context,outputs:['index.html'],summary:'Design overview',markdown});
+  assert.equal(JSON.parse(await readFile(path.join(dir,'comment-content.json'),'utf8')).markdown,markdown,'full content must remain available for regeneration');
+  const draft=await readFile(path.join(dir,'comment.md'),'utf8');
+  assert.ok(draft.length<=60000);assert.match(draft,/Complete documents, diagrams/);assert.match(draft,/of 1000 source limitations shown/);
+  assert.equal((draft.match(/```/g)||[]).length,0,'compact comments cannot contain truncated diagram fences');
+  const links='[Download index.html](https://github.com/user-attachments/files/123/'+ 'a'.repeat(2000)+')';
+  const published=makeComment({skill:'reverse-design',context,summary:'Design overview',markdown,maxLength:60000-links.length-2})+'\n'+links+'\n';
+  assert.ok(published.length<=60000);assert.ok(published.endsWith(links+'\n'));
+});

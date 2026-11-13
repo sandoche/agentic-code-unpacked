@@ -8,6 +8,20 @@ import { loadBrowser } from '../../../skills/review-quiz/runtime/scripts/core.mj
 import { renderQuiz } from '../../../skills/review-quiz/scripts/review-quiz.mjs';
 import { context, quizFixture, architectureContext, architectureQuizFixture } from './fixtures.mjs';
 
+test('mobile quiz wraps complete long source coverage paths', async t=>{
+  const dir=await mkdtemp(path.join(os.tmpdir(),'review-quiz-mobile-'));
+  t.after(()=>rm(dir,{recursive:true,force:true}));
+  const limitation='compiler/packages/babel-plugin-react-compiler/src/__tests__/fixtures/compiler/error.component-syntax-ref-gating.flow.js: parser diagnostics; structure omitted';
+  await renderQuiz({...context,limitations:[limitation]},quizFixture(),dir);
+  const browser=await loadBrowser();t.after(()=>browser.close());
+  const page=await browser.newPage({viewport:{width:390,height:844}});
+  await page.goto(pathToFileURL(path.join(dir,'index.html')).href);
+  assert.ok((await page.locator('.coverage').textContent()).includes(limitation),'the entire source omission must remain visible');
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth),390,'source paths must not widen the mobile document');
+  await page.getByRole('button',{name:'Check understanding'}).click();
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth),390,'revealed feedback must retain the mobile width');
+});
+
 test('offline quiz supports keyboard answers, score, recommendations, resubmit, and reset', { timeout: 120000 }, async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'review-quiz-browser-'));
   let browser;

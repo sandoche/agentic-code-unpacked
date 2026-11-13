@@ -151,18 +151,25 @@ test('offline browser supports search, selection, zoom, drag, reset and lazy cod
   } finally { await browser.close(); await rm(dir, { recursive: true, force: true }); }
 });
 
-test('large map keeps every path searchable without eager source elements', async () => {
+test('3669-file map fits every card and keeps every path searchable without eager source elements', async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'code-map-large-'));
   const browser = await loadBrowser();
   try {
-    const context = { schemaVersion: 1, target: { kind: 'codebase' }, source: { head: 'abc123' }, limitations: [], evidence: [], relationships: [], files: Array.from({ length: 350 }, (_, i) => ({ id: `f${i}`, path: `src/file-${i}.js`, status: 'snapshot', content: 'const value = 1;\n', hunks: [] })) };
+    const context = { schemaVersion: 1, target: { kind: 'codebase' }, source: { head: 'abc123' }, limitations: [], evidence: [], relationships: [], files: Array.from({ length: 3669 }, (_, i) => ({ id: `f${i}`, path: `src/file-${i}.js`, status: 'snapshot', content: 'const value = 1;\n', hunks: [] })) };
     await renderCodeMap(context, undefined, dir);
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     await page.goto(pathToFileURL(path.join(dir, 'index.html')).href);
-    await page.getByRole('searchbox').fill('file-349.js');
+    const overflow=await page.evaluate(()=>{
+      const viewport=document.getElementById('viewport').getBoundingClientRect();
+      return [...document.querySelectorAll('.file-card')].filter(card=>{const box=card.getBoundingClientRect();return box.left<viewport.left||box.top<viewport.top||box.right>viewport.right||box.bottom>viewport.bottom;}).length;
+    });
+    assert.equal(overflow,0,'Fit files must include every captured card within the viewport');
+    await page.getByRole('button', { name: 'Zoom in', exact: true }).click();
+    await page.getByRole('button', { name: 'Fit files', exact: true }).click();
+    await page.getByRole('searchbox').fill('file-3668.js');
     assert.equal(await page.locator('.file-card:visible').count(), 1);
     assert.equal(await page.locator('.file-card pre').count(), 0);
-    await page.getByRole('button', { name: 'src/file-349.js', exact: true }).click();
+    await page.getByRole('button', { name: 'src/file-3668.js', exact: true }).click();
     assert.match(await page.locator('#detail').innerText(), /const value = 1/);
   } finally { await browser.close(); await rm(dir, { recursive: true, force: true }); }
 });
