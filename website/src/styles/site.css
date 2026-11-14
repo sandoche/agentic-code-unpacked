@@ -274,24 +274,21 @@ code {
 .run-stats {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  align-items: center;
+  gap: 6px 20px;
   font-size: 13px;
 }
-.stat-chip {
+.run-stat {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 5px 8px;
-  border: 1px solid #d1d9e0;
-  border-radius: 6px;
-  background: var(--white);
+  gap: 6px;
   white-space: nowrap;
 }
-.stat-chip strong {
-  padding: 0 6px;
-  border-radius: 20px;
-  background: var(--count-bg);
-  font-weight: 500;
+.run-stat strong {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
 }
 .diff-count {
@@ -303,10 +300,12 @@ code {
   align-self: center;
   font-size: 12px;
   line-height: 1.6;
-  padding: 5px 8px;
-  border: 1px solid #d1d9e0;
-  border-radius: 6px;
-  background: var(--white);
+  padding-block: 3px;
+}
+.article-header .diff-count {
+  /* A flat paper highlight keeps the original diff colors readable on colored headers. */
+  background: var(--paper);
+  padding-inline: 8px;
 }
 .diff-added {
   color: var(--diff-added);
@@ -941,7 +940,10 @@ code {
     margin-bottom: 4px;
   }
   .run-stats {
-    gap: 8px;
+    gap: 6px 20px;
+  }
+  .run-stat strong {
+    font-size: 24px;
   }
   .snapshot-note {
     font-size: 12px;

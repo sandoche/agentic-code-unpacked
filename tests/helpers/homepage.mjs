@@ -14,7 +14,7 @@ export async function checkHomepage(browser,url,{screenshots}={}){
   assert.equal(await page.getByRole('tab').count(),0,'skills must be visible in sequence');
   assert.equal(await page.locator('.case-card').count(),3);
   assert.equal(await page.locator('.hero-run a[href="https://github.com/sandoche/react/pull/1"]').count(),1);
-  assert.equal(await page.locator('.hero-run .stat-chip').count(),6);
+  assert.equal(await page.locator('.hero-run .run-stat').count(),6);
   assert.equal(await page.locator('.hero-run .diff-bar i').count(),15);
   assert.match(await page.locator('.hero-run .diff-count').first().getAttribute('aria-label'),/additions, .* deletions/);
   const hero=page.locator('.monster-stage > img');await hero.evaluate(image=>image.decode());
@@ -92,7 +92,9 @@ export async function checkHomepage(browser,url,{screenshots}={}){
    assert.equal(await page.locator('.footer-note a').textContent(),'By Sandoche');
    const contrast=await page.locator('.diff-count > .diff-added, .diff-count > .diff-removed').evaluateAll(elements=>elements.map(element=>{
     const luminance=color=>{const channels=color.match(/\d+/g).slice(0,3).map(Number).map(value=>{const s=value/255;return s<=0.04045?s/12.92:((s+0.055)/1.055)**2.4;});return channels[0]*0.2126+channels[1]*0.7152+channels[2]*0.0722;};
-    const foreground=luminance(getComputedStyle(element).color),background=luminance(getComputedStyle(element.parentElement).backgroundColor);
+    let ancestor=element.parentElement;
+    while(ancestor&&getComputedStyle(ancestor).backgroundColor==='rgba(0, 0, 0, 0)')ancestor=ancestor.parentElement;
+    const foreground=luminance(getComputedStyle(element).color),background=luminance(ancestor?getComputedStyle(ancestor).backgroundColor:'rgb(255, 255, 255)');
     return (Math.max(foreground,background)+0.05)/(Math.min(foreground,background)+0.05);
    }));
    assert.ok(contrast.every(ratio=>ratio>=4.5),'diff counts remain readable on colored article headers');
