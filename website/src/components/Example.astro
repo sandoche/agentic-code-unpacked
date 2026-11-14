@@ -1,0 +1,46 @@
+---
+import { getExample, getRun } from "../lib/examples";
+interface Props {
+  id: string;
+}
+const { id } = Astro.props;
+const example = getExample(id);
+const run = getRun(example.run);
+const start = id === "react-map" ? "#symbol=symbol-91d53faf030783fa" : "";
+const caseSlug =
+  example.run === "react" ? "react-compiler" : example.run === "vue" ? "vue-vapor" : "silk-gzip";
+---
+
+<figure class="real-example" id={"try-" + id} data-example={id}>
+  <div class="example-toolbar">
+    <span>
+      <strong>{run.name}</strong> / {example.format === "xkcd" ? "comics" : example.format}
+    </span>
+    <a href={example.src + start} target="_blank" rel="noopener">
+      Open full size <span aria-hidden="true">↗</span>
+    </a>
+  </div>
+  <iframe
+    src={example.src + start}
+    title={example.title + " — actual Code Unpacked viewer"}
+    loading="lazy"
+    allowfullscreen
+  ></iframe>
+  <figcaption>
+    <p>
+      <strong>
+        {example.excerpt
+          ? "Real run, excerpt."
+          : example.presentationFix
+            ? "Published run, mobile layout fixed."
+            : "Original published viewer."}
+      </strong>{" "}
+      {example.scope}
+    </p>
+    <div>
+      <a href={run.prUrl}>View PR</a>
+      <a href={example.originalArtifact}>Download original</a>
+      <a href={"/showcase/" + caseSlug + "/"}>Read the case study</a>
+    </div>
+  </figcaption>
+</figure>

@@ -1,5 +1,12 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
   "astro": true,
-  "ignorePatterns": [".astro/", "dist/"]
+  "ignorePatterns": [
+    ".astro/",
+    "dist/",
+    "public/examples/",
+    "examples/inputs/",
+    "examples/originals/",
+    "examples/.rendered/"
+  ]
 }

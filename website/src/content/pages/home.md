@@ -1,252 +1,69 @@
 ---
 seo:
-  title: Code Unpacked | Understand the PR before it ships
-  description: Free, open-source skills that help engineers understand AI-written PRs through walkthroughs, design docs, code maps, quizzes, and comics. Runs through your coding agent.
-  canonical: https://codeunpacked.san.cx/
+  title: "Code Unpacked — Your PR is a monster."
+  description: "Five open-source skills for understanding big pull requests. Try real walkthroughs, design docs, code maps, quizzes and comics from React, Vue and Silk."
+  image: /og/home.png
+  imageAlt: "Code Unpacked: Your PR is a monster. Three illustrated creatures made from code diffs."
 brand: Code Unpacked
 navigation:
-  - { label: The skills, href: "#skills" }
-  - { label: Why understand it?, href: "#why" }
-  - { label: FAQ, href: "#faq" }
+  - { label: The skills, href: "/#skills" }
+  - { label: Real runs, href: /showcase/ }
+  - { label: FAQ, href: "/#faq" }
   - { label: GitHub, href: "https://github.com/sandoche/agentic-code-unpacked" }
 hero:
-  title: Stop pretending you understand that PR.
-  description: Understand AI-written code before you review it or build on it.
+  title: Your PR is a monster.
+  description: "Five ways to understand it before you type “LGTM”."
   primary: { label: Install the skills, href: "#install" }
-  secondary: { label: Explore an example, href: "#skills" }
-  source:
-    file: orders.ts
-    code: |
-      await db.transaction(async (tx) => {
-        const order = await tx.orders.create(payload);
-        await tx.events.insert({
-          provider,
-          eventId,
-          orderId: order.id
-        });
-        return order;
-      });
-  constraint: UNIQUE(provider, eventId)
-  note: Two deliveries. One committed order.
-problem:
-  title: The diff is only the start.
-  description: Passing tests don’t explain the change.
-  moments:
-    - title: Where do I start?
-      text: Six files changed. The connection matters.
-    - title: What happens when it fails?
-      text: Follow the retry, rollback, and unhappy path.
-    - title: How would I extend it?
-      text: Know which assumptions the next feature could break.
-approach:
-  title: Your agent. A clearer picture.
-  description: Choose a PR, branch, repository, or selected code.
-  license: Free and open source. MIT licensed.
-  facts:
-    - Runs through your existing agent.
-    - Saves local artifacts you can open offline.
-    - No separate Code Unpacked account or cloud service.
+  secondary: { label: Try a real example, href: "#skills" }
+  note: Just one more file.
+  caption: Three real PRs that earned the illustration.
 skills:
-  title: One PR. Five ways in.
-  description: Choose a format.
-  example: Stop duplicate webhooks creating duplicate orders.
-  disclosure: Illustrative example. Not a real PR.
-demos:
-  - kind: walkthrough
-    id: walkthrough
-    label: Walkthrough
+  - id: walkthrough
+    name: Walkthrough
+    title: Start somewhere better than file one.
+    description: "A diff has an order. It probably isn't the order you need. Follow a reading path that explains the change, then puts the relevant source beside it."
     command: /walkthrough
-    title: Find a useful reading order.
-    description: A reading order with source.
-    steps:
-      - id: receive
-        title: Receive the event
-        explanation: Follow the provider and event ID into order creation.
-        source:
-          file: webhook.ts
-          code: |
-            type WebhookEvent = {
-              provider: string;
-              id: string;
-              payload: Record<string, unknown>;
-            };
-
-            async function handleWebhook(event: WebhookEvent) {
-              return createOrderOnce(event);
-            }
-      - id: transaction
-        title: Save both records together
-        explanation: The order and event marker share one transaction. The database enforces a unique provider/event-ID pair.
-        source:
-          file: orders.ts
-          code: |
-            await db.transaction(async (tx) => {
-              const order = await tx.orders.create(event.payload);
-              await tx.events.insert({
-                provider: event.provider,
-                eventId: event.id,
-                orderId: order.id
-              });
-              return order;
-            });
-      - id: duplicate
-        title: Handle another delivery
-        explanation: A duplicate returns the existing order. If creation failed, the transaction left neither record, so a later delivery can retry.
-        source:
-          file: orders.ts
-          code: |
-            if (!isDuplicateEvent(error)) throw error;
-            return db.orders.forEvent(event.provider, event.id);
-  - kind: reverse-design
-    id: reverse-design
-    label: Reverse design
+    example: silk-walkthrough
+    instruction: "Try it: use Next to follow Silk's fast decoder from its guard rails into the code."
+  - id: reverse-design
+    name: Reverse design
+    title: Read the design hiding in the diff.
+    description: "Reconstruct the moving parts, the boundaries and the awkward cases. Architecture and sequence diagrams give you something to check against the source."
     command: /reverse-design
-    title: See how the pieces fit.
-    description: Reconstruct behavior and architecture from the source.
-    cases:
-      - id: first
-        label: First delivery
-        diagram:
-          title: One transaction
-          steps: [Receive event, Create order, Save event marker, Commit both]
-          note: The unique key belongs to the database.
-        explanation: Both records become visible together. The event marker links this delivery to its order.
-      - id: duplicate
-        label: Duplicate
-        diagram:
-          title: Existing event
-          steps:
-            [Receive same event, Unique key conflicts, Roll back attempt, Return existing order]
-          note: A prior read alone cannot settle the race.
-        explanation: The second attempt cannot commit another marker. Its order is rolled back, and the handler returns the first committed order.
-      - id: failure
-        label: Rollback
-        diagram:
-          title: Failed creation
-          steps: [Receive event, Order creation fails, Roll back both records, Allow a later retry]
-          note: No marker remains for an order that never committed.
-        explanation: This is observed behavior in the example. The reason for choosing this design would be labeled as inferred intent in generated design documents.
-  - kind: code-map
-    id: code-map
-    label: Code map
+    example: vue-design
+    instruction: "Try it: explore Vue's design documents and follow a diagram's source references."
+  - id: code-map
+    name: Code map
+    title: Find the code behind the claim.
+    description: "Thousands of files. A handful of useful starting points. Search the inventory, inspect a function, and follow the connections the analysis can support."
     command: /code-map
-    title: Follow the connections.
-    description: Select a function to see its role and source.
-    nodes:
-      - id: handler
-        name: handleWebhook
-        role: Receives the delivery and passes the event to order creation.
-        source: { file: webhook.ts, code: "return createOrderOnce(event);" }
-      - id: create
-        name: createOrderOnce
-        role: Coordinates the transaction and handles a duplicate event.
-        source: { file: orders.ts, code: "return await db.transaction(saveOrderAndEvent);" }
-      - id: transaction
-        name: saveOrderAndEvent
-        role: Writes the order and unique event marker atomically.
-        source:
-          file: orders.ts
-          code: |
-            const order = await tx.orders.create(event.payload);
-            await tx.events.insert({ provider, eventId, orderId: order.id });
-    edges:
-      - { from: handler, to: create, label: calls }
-      - { from: create, to: transaction, label: runs in transaction }
-  - kind: review-quiz
-    id: review-quiz
-    label: Review quiz
+    example: react-map
+    instruction: "Try it: inspect compileProgram, follow its connections, then use zoom and Fit files to explore this excerpt."
+  - id: review-quiz
+    name: Review quiz
+    title: Find out what you missed.
+    description: "Reading an explanation can feel suspiciously like understanding it. Answer questions about behavior and architecture, then check your reasoning against the evidence."
     command: /review-quiz
-    title: Could you explain it yourself?
-    description: Try two questions about behavior and architecture.
-    questions:
-      - id: race
-        prompt: Two copies arrive together. What prevents a second committed order?
-        options:
-          - id: read
-            text: Each request checks for an existing order first.
-            feedback: Both requests could read before either commits. Check the write constraint.
-          - id: unique
-            text: A unique event key inside the order transaction.
-            feedback: Yes. The database prevents two committed markers, and each marker shares its transaction with its order.
-          - id: response
-            text: The handler returns a successful HTTP response.
-            feedback: A successful response acknowledges a delivery. It does not make writes unique.
-        correctOptionId: unique
-        explanation: The unique provider/event-ID pair settles concurrent attempts. A conflicting transaction rolls back its order.
-        source: { file: schema.sql, code: "UNIQUE (provider, event_id)" }
-      - id: architecture
-        prompt: Where should the event marker be written?
-        diagram:
-          title: Complete the flow
-          steps: [Webhook handler, Create order, "? Save event marker"]
-          note: Choose the transaction boundary before revealing the diagram.
-        options:
-          - id: before
-            text: Before order creation, in a separate transaction.
-            feedback: A failed order could leave a marker that blocks the next retry.
-          - id: same
-            text: In the same transaction as order creation.
-            feedback: Yes. Both writes commit or roll back together.
-          - id: after
-            text: After the response, in a background task.
-            feedback: A retry could arrive before the marker is stored.
-        correctOptionId: same
-        explanation: The order and marker are one atomic unit. A failure leaves neither behind.
-        explanationDiagram:
-          title: The completed architecture
-          steps: [Receive event, Begin transaction, Write order + marker, Commit together]
-          note: On failure, roll back both writes.
-        source:
-          file: orders.ts
-          code: |
-            await db.transaction(async (tx) => {
-              await saveOrderAndEvent(tx, event);
-            });
-  - kind: xkcd
-    id: xkcd
-    label: Comics
+    example: vue-quiz
+    instruction: "Try it: choose an answer, check the feedback, and follow the source. Retakes are encouraged."
+  - id: xkcd
+    name: Comics
+    title: Remember the bit that bites.
+    description: "Some ideas stick better as a small argument between functions. A source-backed comic makes one tricky constraint memorable enough to bring into the review."
     command: /xkcd
-    title: Make the tricky bit stick.
-    description: A small story about two workers and one database rule.
-    image: /images/webhook-race.png
-    imageWidth: 2146
-    imageHeight: 733
-    alt: Three-panel stick-figure comic. Two workers read the same missing order, attempt to create it, and receive the same committed order after the database settles the race.
-    panels:
-      - title: The prior read
-        transcript: "Two workers hold the same event. “I checked. No order yet.” “So did I.”"
-      - title: The race
-        transcript: "Both say, “I’ll create it.” The database says, “One event. One committed order.”"
-      - title: The constraint
-        transcript: "Both point to order 17. “The database settles the race.”"
-    source:
-      file: schema.sql
-      code: UNIQUE (provider, event_id)
-bundle:
-  title: Want the whole picture?
-  text: Generate all five formats from one snapshot and shared analysis.
-  command: /code-unpacked
-research:
-  title: Understanding is part of the work.
-  figure: 58%
-  explanation: of working time went to program comprehension in one field study.
-  detail: 78 professional developers. Seven projects. Development and maintenance activities, beyond PR review.
-  source: { label: Read the field study, href: "https://xin-xia.github.io/publication/TSE17.pdf" }
-  review: Research at Microsoft also identified understanding code and changes as central to code review.
-  reviewSource:
-    {
-      label: Read the review research,
-      href: "https://www.microsoft.com/en-us/research/publication/expectations-outcomes-and-challenges-of-modern-code-review/",
-    }
+    example: react-comic
+    instruction: "Try it: read the strip, then open its transcript to see where the metaphor stops."
+showcase:
+  title: We brought actual monsters.
+  description: "A compiler import, a new renderer, and a decoder with an unsafe fast path. Here's what the skills helped make legible."
+  action: { label: Read all three runs, href: /showcase/ }
 install:
-  title: Bring a PR. Start here.
-  description: Run this in your project, then choose your skills and agent.
+  title: Bring your own monster.
+  description: "Free, open-source skills. Your existing coding agent. Start with one format, or run /code-unpacked for all five."
   command: npx skills add sandoche/agentic-code-unpacked
   usage: /walkthrough pr https://github.com/owner/repo/pull/123 --draft
   codexUsage: $walkthrough pr https://github.com/owner/repo/pull/123 --draft
-  codexLabel: Using Codex?
-  detailsLabel: Requirements and supported agents
-  requirements: Node.js 22.23.4+ with npm. Start a new agent session after installation.
+  requirements: "Node.js 22.23.4+ with npm. Start a new agent session after installation. First use downloads the rendering tools."
   agents: [Claude Code, Codex, Cursor, GitHub Copilot, Gemini CLI, OpenCode]
   guide:
     {
@@ -254,65 +71,42 @@ install:
       href: "https://github.com/sandoche/agentic-code-unpacked/blob/main/docs/usage.md",
     }
 faq:
-  title: A few practical questions.
+  title: Fair questions.
   items:
-    - question: What is a skill?
-      answer: A skill gives your coding agent instructions and tools for a task. Install it, then invoke it in the agent you already use.
-    - question: Does this work on human-written code?
-      answer: Yes. Use it on a PR, branch, repository, selected files, or pasted code, whoever wrote it.
-    - question: How is it different from a PR summary?
-      answer: A summary gives you an overview. These skills produce a reading order, design documents, an explorable map, questions, or comics you can work through.
+    - question: What am I installing?
+      answer: "Instructions and tools for the coding agent you already use. Install an individual skill, or code-unpacked for the complete five-format bundle. There's no separate Code Unpacked account."
+    - question: Is this only for AI-written code?
+      answer: "No. Bring a PR, branch, repository, selected files or pasted code, whoever wrote it. AI can make the pile grow faster; understanding the pile is the useful part."
+    - question: How is this different from a PR summary?
+      answer: "A summary tells you what changed. These formats give you a way through it: a reading order, reconstructed design, explorable connections, questions to answer, or a comic about one important constraint."
     - question: Can the explanations be wrong?
-      answer: Yes. Your agent generates them. Follow the source references to check important claims. Inferred intent and missing evidence should be identified in the output.
-    - question: Does passing the quiz mean the PR is safe?
-      answer: No. The quiz checks understanding of the explained code. You still assess correctness, tests, security, and whether the change solves the problem.
+      answer: "Yes. Your agent generates them. Use the source references to check important claims. Missing evidence, inferred intent and unsupported code should stay visible. The real runs show those boundaries too."
+    - question: Does a good quiz score mean I should approve?
+      answer: "It means you understood the exercise. Correctness, tests, security and whether the change solves the right problem still need your judgment."
     - question: Where does my code go?
-      answer: Your agent’s configured providers and data-handling rules apply. Artifacts save under .code-unpacked/. Posting to a PR requires an explicit request and authenticated access. The --draft option stays local.
-    - question: Does it need a cloud service?
-      answer: Code Unpacked runs through your existing agent without its own hosted service or account. First use downloads rendering tools. Offline generation needs local source, cached tools, and an agent with a local model. Finished HTML opens offline.
-    - question: Is it free for commercial use?
-      answer: Yes. The software is free, open source, and MIT licensed. Your agent, model provider, or image-generation service may charge for usage.
-    - question: Do I need all five formats?
-      answer: No. Install an individual skill or install code-unpacked for the complete bundle. The bundle includes all five formats, without separate installations.
-    - question: What about video and comics?
-      answer: Optional video export needs FFmpeg. Comics need an available image-generation tool. Without one, the workflow saves its storyboard and prompts for later.
-closing:
-  title: Understand it. Then make the call.
-  text: Start with the PR you’re about to write “looks good” on.
-  action: { label: Install the skills, href: "#install" }
+      answer: "Your agent's configured providers and data-handling rules apply. Artifacts save under .code-unpacked/. Use --draft to keep delivery local. Posting to a PR requires an explicit request and authenticated access."
+    - question: Can I open the results without the agent?
+      answer: "Yes. Finished HTML opens locally and works offline. Large outputs may arrive as a ZIP: extract it first. The website previews are selected from real runs; each links to its original result and complete bundle."
+    - question: Is it free?
+      answer: "The software is free, open source and MIT licensed, including commercial use. Your agent, model provider and image-generation service may charge for usage."
+    - question: What do comics and video need?
+      answer: "Comics need an available image-generation tool. Without one, the workflow can retain its storyboard and prompts. Optional video export needs FFmpeg; the interactive HTML does not."
 footer:
-  description: Free, open-source skills for engineers who review what they ship.
+  description: "Make the change understandable. Then make the call."
   links:
     - { label: GitHub, href: "https://github.com/sandoche/agentic-code-unpacked" }
     - {
         label: Usage guide,
         href: "https://github.com/sandoche/agentic-code-unpacked/blob/main/docs/usage.md",
       }
-  license:
-    {
-      label: MIT license,
-      href: "https://github.com/sandoche/agentic-code-unpacked/blob/main/LICENSE",
-    }
+    - {
+        label: MIT license,
+        href: "https://github.com/sandoche/agentic-code-unpacked/blob/main/LICENSE",
+      }
 ui:
-  copy: Copy command
+  copy: Copy
   copied: Copied
   copyFallback: Select the command and copy it manually.
-  previous: Previous step
-  next: Next step
-  previousPanel: Previous panel
-  nextPanel: Next panel
-  source: Read the source
-  check: Check my answers
-  retake: Retake quiz
-  answerRequired: Choose an answer for each question first.
-  correct: Correct
-  incorrect: Take another look
-  score: Your score
-  question: Question
-  transcript: Read the transcript
-  panel: Panel
-  skip: Skip to content
-  menu: Navigation
 ---
 
-The front matter is the canonical website content. Previews share an illustrative webhook change; they do not claim to show a real customer PR.
+Homepage copy is maintained in this front matter. The example references resolve to versioned, verified artifacts in examples/provenance.json.

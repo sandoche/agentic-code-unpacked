@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "runs": {
+    "react": {
+      "name": "React Compiler",
+      "repository": "sandoche/react",
+      "prUrl": "https://github.com/sandoche/react/pull/1",
+      "commentUrl": "https://github.com/sandoche/react/pull/1#issuecomment-6840893396",
+      "bundleUrl": "https://github.com/sandoche/react/raw/57015722bb9cf2fbb2b2be9409c57bb79a7e85b9/code-unpacked-artifacts/react-pr-1-complete-bundle.zip",
+      "sourceHead": "575477a2e8f9db57ef4a1bf0d3b449e4f8244af8",
+      "sourceBase": "915b914b3a05b60590c75851464e1ca75249976d",
+      "stats": {
+        "files": 3669,
+        "commits": 1900,
+        "additions": 358424,
+        "deletions": 0
+      },
+      "artifacts": {
+        "walkthrough": "https://github.com/sandoche/react/raw/4c2bbc612a301bebd20c760a7486beefd8315ac2/code-unpacked-artifacts/walkthrough.html.zip",
+        "reverse-design": "https://github.com/sandoche/react/raw/4c2bbc612a301bebd20c760a7486beefd8315ac2/code-unpacked-artifacts/reverse-design.html.zip",
+        "code-map": "https://github.com/sandoche/react/raw/4c2bbc612a301bebd20c760a7486beefd8315ac2/code-unpacked-artifacts/code-map.html.zip",
+        "review-quiz": "https://github.com/sandoche/react/raw/4c2bbc612a301bebd20c760a7486beefd8315ac2/code-unpacked-artifacts/review-quiz.html.zip",
+        "xkcd": "https://github.com/sandoche/react/raw/4c2bbc612a301bebd20c760a7486beefd8315ac2/code-unpacked-artifacts/xkcd.html.zip"
+      }
+    },
+    "vue": {
+      "name": "Vue Vapor",
+      "repository": "sandoche/core",
+      "prUrl": "https://github.com/sandoche/core/pull/1",
+      "commentUrl": "https://github.com/sandoche/core/pull/1#issuecomment-6840888630",
+      "bundleUrl": "https://github.com/sandoche/core/raw/2c94f0830a505e0005cf95f4d78260de8d9c02d6/code-unpacked-artifacts/vue-pr-1-complete-bundle.zip",
+      "sourceHead": "3a3bd842cad433462697f329c3dceaf274b3847d",
+      "sourceBase": "be178f876caad694ebbb1fd0a88a2c7cdabe361e",
+      "stats": {
+        "files": 303,
+        "commits": 856,
+        "additions": 35157,
+        "deletions": 2100
+      },
+      "artifacts": {
+        "walkthrough": "https://github.com/sandoche/core/raw/0da36b0a452a16ab72a127f0bf6c00db29954e7e/code-unpacked-artifacts/walkthrough.html.zip",
+        "reverse-design": "https://github.com/sandoche/core/raw/0da36b0a452a16ab72a127f0bf6c00db29954e7e/code-unpacked-artifacts/reverse-design.html.zip",
+        "code-map": "https://github.com/sandoche/core/raw/0da36b0a452a16ab72a127f0bf6c00db29954e7e/code-unpacked-artifacts/code-map.html.zip",
+        "review-quiz": "https://github.com/sandoche/core/raw/0da36b0a452a16ab72a127f0bf6c00db29954e7e/code-unpacked-artifacts/review-quiz.html.zip",
+        "xkcd": "https://github.com/sandoche/core/raw/0da36b0a452a16ab72a127f0bf6c00db29954e7e/code-unpacked-artifacts/xkcd.html.zip"
+      }
+    },
+    "silk": {
+      "name": "Silk gzip decoder",
+      "repository": "silk-lang/silk",
+      "prUrl": "https://github.com/silk-lang/silk/pull/3079",
+      "commentUrl": "https://github.com/silk-lang/silk/pull/3079#issuecomment-6854979396",
+      "bundleUrl": "https://github.com/user-attachments/files/34807584/silk-pr-3079-code-unpacked.zip",
+      "sourceHead": "3a635a98fffe0c675faea588ac4e1b9f7c58b495",
+      "sourceBase": "0f51f9e8567cd64b1f243a5d93dac062707788e7",
+      "baseRef": "72ee0a31cb4b8f8e37421803318a50216e483020",
+      "stats": {
+        "files": 18,
+        "commits": 10,
+        "additions": 4104,
+        "deletions": 246
+      },
+      "artifacts": {
+        "walkthrough": "https://github.com/user-attachments/files/34807583/silk-pr-3079-walkthrough.html",
+        "reverse-design": "https://github.com/user-attachments/files/34807580/silk-pr-3079-reverse-design.html",
+        "code-map": "https://github.com/user-attachments/files/34807585/silk-pr-3079-code-map.html",
+        "review-quiz": "https://github.com/user-attachments/files/34807582/silk-pr-3079-review-quiz.html",
+        "xkcd": "https://github.com/user-attachments/files/34807581/silk-pr-3079-xkcd.html"
+      }
+    }
+  },
+  "examples": [
+    {
+      "id": "silk-walkthrough",
+      "run": "silk",
+      "format": "walkthrough",
+      "title": "Silk fast decoder walkthrough",
+      "scope": "Complete published walkthrough from the final merged source head.",
+      "excerpt": false,
+      "originalArtifact": "https://github.com/user-attachments/files/34807583/silk-pr-3079-walkthrough.html",
+      "src": "/examples/silk-walkthrough/index.html",
+      "bytes": 144675,
+      "sha256": "235f8f71381c926fc65d168aad2ee272fb7f0b0bfd3ea9dfef7f992b21d3931d",
+      "originalSha256": "bbace1684cef066c06563e39bc3e741c7568645bcbd10e6be3486f0d9d7c4bb2",
+      "presentationFix": "Wrap revision IDs and source coverage on narrow screens; walkthrough content and controls are unchanged."
+    },
+    {
+      "id": "silk-quiz",
+      "run": "silk",
+      "format": "review-quiz",
+      "title": "Silk fast-path quiz",
+      "scope": "Complete published quiz, including behavioral and architecture questions.",
+      "excerpt": false,
+      "originalArtifact": "https://github.com/user-attachments/files/34807582/silk-pr-3079-review-quiz.html",
+      "src": "/examples/silk-quiz/index.html",
+      "bytes": 116382,
+      "sha256": "8eb02212fd4a86ea1ab211af76603ccd9dd6e6c2e234bad3518f3cea0e842c2e",
+      "originalSha256": "0c317224048ed0505f3b71f66ac05ab6c40a5459e2516b79b2d12e6ef9c8a250",
+      "presentationFix": "Wrap coverage revision IDs on narrow screens; questions and grading are unchanged."
+    },
+    {
+      "id": "vue-design",
+      "run": "vue",
+      "format": "reverse-design",
+      "title": "Vue Vapor design documents",
+      "scope": "Complete published design viewer, with documents, diagrams and source references.",
+      "excerpt": false,
+      "originalArtifact": "https://github.com/sandoche/core/raw/0da36b0a452a16ab72a127f0bf6c00db29954e7e/code-unpacked-artifacts/reverse-design.html.zip",
+      "src": "/examples/vue-design/index.html",
+      "bytes": 313556,
+      "sha256": "ce199060bce4f751da629236e1a2aead8c5c1bb7de1ccd3ec32957359373226a"
+    },
+    {
+      "id": "vue-quiz",
+      "run": "vue",
+      "format": "review-quiz",
+      "title": "Vue Vapor review quiz",
+      "scope": "Complete published quiz. Your score measures this exercise, not PR correctness.",
+      "excerpt": false,
+      "originalArtifact": "https://github.com/sandoche/core/raw/0da36b0a452a16ab72a127f0bf6c00db29954e7e/code-unpacked-artifacts/review-quiz.html.zip",
+      "src": "/examples/vue-quiz/index.html",
+      "bytes": 177707,
+      "sha256": "8da57ab51158bc1b1485dbdba9c77bb03282dd42f21edbc301c824a5157c85b3"
+    },
+    {
+      "id": "vue-walkthrough",
+      "run": "vue",
+      "format": "walkthrough",
+      "title": "Vue Vapor walkthrough",
+      "scope": "Complete published reading order and source-linked deep dives.",
+      "excerpt": false,
+      "originalArtifact": "https://github.com/sandoche/core/raw/0da36b0a452a16ab72a127f0bf6c00db29954e7e/code-unpacked-artifacts/walkthrough.html.zip",
+      "src": "/examples/vue-walkthrough/index.html",
+      "bytes": 1309814,
+      "sha256": "71792c551706bf8f8f3d8ae9c0df0a73a5d0076477166f6d6bcdbcc994bea33a",
+      "originalSha256": "840836e05ef41c3b320ff0165e79944b3e997594cd9c7ea8c90475ade54a96df",
+      "presentationFix": "Wrap revision IDs and source coverage on narrow screens; walkthrough content and controls are unchanged."
+    },
+    {
+      "id": "react-walkthrough",
+      "run": "react",
+      "format": "walkthrough",
+      "title": "React Compiler walkthrough",
+      "scope": "Complete published walkthrough from the pinned compiler import.",
+      "excerpt": false,
+      "originalArtifact": "https://github.com/sandoche/react/raw/4c2bbc612a301bebd20c760a7486beefd8315ac2/code-unpacked-artifacts/walkthrough.html.zip",
+      "src": "/examples/react-walkthrough/index.html",
+      "bytes": 4440195,
+      "sha256": "3ebd47d41d3ed64d33c0925fda5dfedadb28b0cda5520a4143c53b9d08216864",
+      "originalSha256": "047c87928dcf7dfb2dc24993cbcbc31f7f2f9c0a17d6111bdb850b94bc3b807e",
+      "presentationFix": "Wrap revision IDs and source coverage on narrow screens; walkthrough content and controls are unchanged."
+    },
+    {
+      "id": "react-map",
+      "run": "react",
+      "format": "code-map",
+      "title": "React Compiler map",
+      "scope": "Eight compiler files from a 3,669-file source change. The source and supported connections are real; the complete map is in the original run download.",
+      "excerpt": true,
+      "originalArtifact": "https://github.com/sandoche/react/raw/4c2bbc612a301bebd20c760a7486beefd8315ac2/code-unpacked-artifacts/code-map.html.zip",
+      "src": "/examples/react-map/index.html",
+      "bytes": 1207349,
+      "sha256": "ec5583280e0b5c44379e084698e49a8b64b0289f36a0835a7979d28a41527ff8",
+      "originalSha256": "f4c60a76fe1dfdf74d9944f32b2536bf6623cc1d580e5943d82a85586d35ffc7",
+      "presentationFix": "Wrap source-provenance text on narrow screens."
+    },
+    {
+      "id": "react-comic",
+      "run": "react",
+      "format": "xkcd",
+      "title": "React Compiler gating comic",
+      "scope": "One of three original strips. Panel dialogue and artwork are preserved; the transcript links the metaphor to source.",
+      "excerpt": true,
+      "originalArtifact": "https://github.com/sandoche/react/raw/4c2bbc612a301bebd20c760a7486beefd8315ac2/code-unpacked-artifacts/xkcd.html.zip",
+      "src": "/examples/react-comic/index.html",
+      "bytes": 2259259,
+      "sha256": "94c10027b51364262af203cca388cecad3556d5d5079f3f915e1639c15bd8316"
+    }
+  ]
+}

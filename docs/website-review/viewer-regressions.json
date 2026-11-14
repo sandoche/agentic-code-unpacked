@@ -1,0 +1,170 @@
+[
+  {
+    "device": "desktop",
+    "id": "silk-walkthrough",
+    "width": 1176,
+    "scroll": 1176,
+    "status": "passed"
+  },
+  {
+    "device": "desktop",
+    "id": "vue-design",
+    "width": 1176,
+    "scroll": 1176,
+    "status": "passed"
+  },
+  {
+    "device": "desktop",
+    "id": "react-map",
+    "width": 1176,
+    "scroll": 1176,
+    "status": "passed"
+  },
+  {
+    "device": "desktop",
+    "id": "vue-quiz",
+    "width": 1176,
+    "scroll": 1176,
+    "status": "passed"
+  },
+  {
+    "device": "desktop",
+    "id": "react-comic",
+    "width": 1176,
+    "scroll": 1176,
+    "status": "passed"
+  },
+  {
+    "device": "desktop",
+    "id": "react-walkthrough",
+    "width": 1176,
+    "scroll": 1176,
+    "status": "passed"
+  },
+  {
+    "device": "desktop",
+    "id": "vue-walkthrough",
+    "width": 1176,
+    "scroll": 1176,
+    "status": "passed"
+  },
+  {
+    "device": "desktop",
+    "id": "silk-quiz",
+    "width": 1176,
+    "scroll": 1176,
+    "status": "passed"
+  },
+  {
+    "device": "touch-mobile-390",
+    "id": "silk-walkthrough",
+    "width": 350,
+    "scroll": 350,
+    "status": "passed"
+  },
+  {
+    "device": "touch-mobile-390",
+    "id": "vue-design",
+    "width": 350,
+    "scroll": 350,
+    "status": "passed"
+  },
+  {
+    "device": "touch-mobile-390",
+    "id": "react-map",
+    "width": 350,
+    "scroll": 350,
+    "status": "passed"
+  },
+  {
+    "device": "touch-mobile-390",
+    "id": "vue-quiz",
+    "width": 350,
+    "scroll": 350,
+    "status": "passed"
+  },
+  {
+    "device": "touch-mobile-390",
+    "id": "react-comic",
+    "width": 350,
+    "scroll": 350,
+    "status": "passed"
+  },
+  {
+    "device": "touch-mobile-390",
+    "id": "react-walkthrough",
+    "width": 350,
+    "scroll": 350,
+    "status": "passed"
+  },
+  {
+    "device": "touch-mobile-390",
+    "id": "vue-walkthrough",
+    "width": 350,
+    "scroll": 350,
+    "status": "passed"
+  },
+  {
+    "device": "touch-mobile-390",
+    "id": "silk-quiz",
+    "width": 350,
+    "scroll": 350,
+    "status": "passed"
+  },
+  {
+    "device": "touch-mobile-320",
+    "id": "silk-walkthrough",
+    "width": 280,
+    "scroll": 281,
+    "status": "passed"
+  },
+  {
+    "device": "touch-mobile-320",
+    "id": "vue-design",
+    "width": 280,
+    "scroll": 280,
+    "status": "passed"
+  },
+  {
+    "device": "touch-mobile-320",
+    "id": "react-map",
+    "width": 280,
+    "scroll": 280,
+    "status": "passed"
+  },
+  {
+    "device": "touch-mobile-320",
+    "id": "vue-quiz",
+    "width": 280,
+    "scroll": 280,
+    "status": "passed"
+  },
+  {
+    "device": "touch-mobile-320",
+    "id": "react-comic",
+    "width": 280,
+    "scroll": 280,
+    "status": "passed"
+  },
+  {
+    "device": "touch-mobile-320",
+    "id": "react-walkthrough",
+    "width": 280,
+    "scroll": 280,
+    "status": "passed"
+  },
+  {
+    "device": "touch-mobile-320",
+    "id": "vue-walkthrough",
+    "width": 280,
+    "scroll": 280,
+    "status": "passed"
+  },
+  {
+    "device": "touch-mobile-320",
+    "id": "silk-quiz",
+    "width": 280,
+    "scroll": 280,
+    "status": "passed"
+  }
+]

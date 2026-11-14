@@ -1,0 +1,38 @@
+---
+import { getEntry, getCollection } from "astro:content";
+import SiteLayout from "../../layouts/SiteLayout.astro";
+import CaseCard from "../../components/CaseCard.astro";
+const entry = await getEntry("showcase", "showcase");
+if (!entry) throw new Error("Showcase content is missing");
+const content = entry.data;
+const cases = (await getCollection("caseStudies")).sort(
+  (a, b) =>
+    ["react", "vue", "silk"].indexOf(a.data.run) - ["react", "vue", "silk"].indexOf(b.data.run),
+);
+---
+
+<SiteLayout {...content.seo}>
+  <section class="showcase-hero container">
+    <div class="showcase-intro">
+      <div>
+        <h1>{content.title}</h1>
+        <p class="lead">{content.description}</p>
+      </div>
+      <img
+        src="/images/pr-monsters.webp"
+        width="1200"
+        height="800"
+        alt="Three very different code-diff monsters."
+      />
+    </div>
+  </section>
+  <section class="container section" style="padding-top:0">
+    <p class="editorial-note">{content.introduction}</p>
+    <div class="case-grid">
+      {cases.map((entry) => (
+        <CaseCard entry={entry} />
+      ))}
+    </div>
+    <p class="showcase-closing">{content.closing}</p>
+  </section>
+</SiteLayout>

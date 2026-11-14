@@ -1,0 +1,94 @@
+---
+import { getCollection, render } from "astro:content";
+import type { CollectionEntry } from "astro:content";
+import SiteLayout from "../../layouts/SiteLayout.astro";
+import RunStats from "../../components/RunStats.astro";
+import Example from "../../components/Example.astro";
+import { getRun } from "../../lib/examples";
+export async function getStaticPaths() {
+  return (await getCollection("caseStudies")).map((entry) => ({
+    params: { slug: entry.id },
+    props: { entry },
+  }));
+}
+interface Props {
+  entry: CollectionEntry<"caseStudies">;
+}
+const { entry } = Astro.props;
+const content = entry.data;
+const run = getRun(content.run);
+const { Content } = await render(entry);
+const labels = {
+  walkthrough: "Walkthrough",
+  "reverse-design": "Reverse design",
+  "code-map": "Code map",
+  "review-quiz": "Review quiz",
+  xkcd: "Comics",
+};
+---
+
+<SiteLayout {...content.seo} articleDate={content.date}>
+  <header class={"article-header case-" + content.run}>
+    <div class="container">
+      <div class="article-meta">
+        <a href="/showcase/">Real runs</a>
+        <span>{run.name}</span>
+        <time datetime={content.date.toISOString()}>
+          {new Intl.DateTimeFormat("en-GB", { dateStyle: "long", timeZone: "UTC" }).format(
+            content.date,
+          )}
+        </time>
+      </div>
+      <h1>{content.title}</h1>
+      <p class="lead">{content.description}</p>
+      <RunStats run={content.run} />
+    </div>
+  </header>
+  <div class="container article-layout">
+    <div>
+      <div class="prose">
+        <Content />
+      </div>
+      <p class="article-takeaway">{content.takeaway}</p>
+    </div>
+    <aside class="article-aside">
+      <h2>The actual run</h2>
+      <p>
+        Every example below comes from this source snapshot. Artifact commits are excluded from the
+        source statistics.
+      </p>
+      <code>{run.sourceHead}</code>
+      <a href={run.prUrl}>Open {run.repository} PR</a>
+      <a class="button" href={run.bundleUrl}>
+        Download all five results
+      </a>
+      <a class="text-link" href={run.commentUrl}>
+        Read the PR comments
+      </a>
+    </aside>
+  </div>
+  <section class="container article-examples" aria-labelledby="try-title">
+    <h2 id="try-title">Put it to work.</h2>
+    {content.examples.map((example) => (
+      <div>
+        <p class="example-note">{example.note}</p>
+        <Example id={example.id} />
+      </div>
+    ))}
+    <h2>All five results</h2>
+    <p>
+      Original artifacts from this run. Download, extract ZIPs if supplied, and open the HTML
+      locally.
+    </p>
+    <ul class="results-grid">
+      {Object.entries(run.artifacts).map(([format, url]) => (
+        <li>
+          <a href={url}>{labels[format as keyof typeof labels]} download</a>
+        </li>
+      ))}
+    </ul>
+    <p class="article-limit">
+      <strong>What this run establishes.</strong> {content.limitation}
+    </p>
+  </section>
+</SiteLayout>

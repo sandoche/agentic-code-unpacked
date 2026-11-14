@@ -1,0 +1,19 @@
+---
+import { getRun, number } from "../lib/examples";
+interface Props {
+  run: string;
+}
+const info = getRun(Astro.props.run);
+---
+
+<div class="run-stats">
+  <span>
+    <strong>{number(info.stats.files)}</strong> source files
+  </span>
+  <span>
+    <strong>{number(info.stats.commits)}</strong> commits
+  </span>
+  <span class="diff-count">
+    <b>+{number(info.stats.additions)}</b> / −{number(info.stats.deletions)}
+  </span>
+</div>
