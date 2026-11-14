@@ -6,7 +6,7 @@ date: 2026-11-13
 seo:
   title: "Understanding Vue Vapor's moving parts — Code Unpacked"
   description: "Explore a real Code Unpacked run on our Vue Vapor fork, connecting template compilation, generated DOM operations and reactive lifetimes."
-  image: /og/vue-vapor.png
+  image: /og/vue-vapor-v2.jpg
   imageAlt: "Vue Vapor: 303 source files and 856 commits. A Code Unpacked case study."
 takeaway: "A diagram is useful when it tells you which boundary to inspect next—and gives you the source to inspect it."
 examples:

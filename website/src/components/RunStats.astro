@@ -1,19 +1,48 @@
 ---
 import { getRun, number } from "../lib/examples";
+import Octicon from "./Octicon.astro";
 interface Props {
   run: string;
 }
 const info = getRun(Astro.props.run);
+const total = info.stats.additions + info.stats.deletions;
+// Keep each nonzero change type visible in this deliberately coarse five-square summary.
+const addedBlocks =
+  info.stats.additions && info.stats.deletions
+    ? Math.max(1, Math.min(4, Math.round((info.stats.additions / total) * 5)))
+    : info.stats.additions
+      ? 5
+      : 0;
 ---
 
 <div class="run-stats">
-  <span>
-    <strong>{number(info.stats.files)}</strong> source files
+  <span class="stat-chip">
+    <Octicon name="files" />
+    <span>Source files</span>
+    <strong>{number(info.stats.files)}</strong>
   </span>
-  <span>
-    <strong>{number(info.stats.commits)}</strong> commits
+  <span class="stat-chip">
+    <Octicon name="commit" />
+    <span>Commits</span>
+    <strong>{number(info.stats.commits)}</strong>
   </span>
-  <span class="diff-count">
-    <b>+{number(info.stats.additions)}</b> / −{number(info.stats.deletions)}
+  <span
+    class="diff-count"
+    role="img"
+    aria-label={
+      number(info.stats.additions) + " additions, " + number(info.stats.deletions) + " deletions"
+    }
+  >
+    <span class="diff-added" aria-hidden="true">
+      +{number(info.stats.additions)}
+    </span>
+    <span class="diff-removed" aria-hidden="true">
+      −{number(info.stats.deletions)}
+    </span>
+    <span class="diff-bar" aria-hidden="true">
+      {Array.from({ length: 5 }, (_, index) => (
+        <i class={!total ? "diff-empty" : index < addedBlocks ? "diff-added" : "diff-removed"} />
+      ))}
+    </span>
   </span>
 </div>

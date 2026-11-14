@@ -6,7 +6,7 @@ date: 2026-11-13
 seo:
   title: "Reading Silk's fast decoder — Code Unpacked"
   description: "Try the real walkthrough and quiz from Silk PR 3079: buffer bounds, fast-loop exits, streaming state and evidence for checksum changes."
-  image: /og/silk-gzip.png
+  image: /og/silk-gzip-v2.jpg
   imageAlt: "Silk gzip decoder: 18 source files, 10 commits. A Code Unpacked case study."
 takeaway: "Eighteen files can still demand a careful reading order. The hard part here is understanding the contract between the fast path and the ordinary decoder."
 examples:

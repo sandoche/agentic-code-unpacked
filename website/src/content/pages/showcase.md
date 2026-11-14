@@ -2,7 +2,7 @@
 seo:
   title: "Real runs — Code Unpacked"
   description: "See how Code Unpacked helps reviewers navigate React Compiler, follow Vue Vapor's design, and reason about Silk's fast decoder."
-  image: /og/showcase.png
+  image: /og/showcase-v2.jpg
   imageAlt: "Real runs: React Compiler, Vue Vapor and Silk, illustrated as three PR monsters."
 title: Big diffs. Useful ways in.
 description: "The best way to explain these skills is to let you use the results."

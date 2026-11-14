@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { imageMetadata } from "astro/assets/utils";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const inventory = JSON.parse(await readFile(path.join(root, "examples/provenance.json"), "utf8"));
 const ids = new Set();
@@ -59,10 +60,12 @@ assert.equal(map.context.files.length, 8);
 assert.equal(map.context.files.filter((file) => typeof file.content === "string").length, 8);
 assert.equal(map.context.source.head, inventory.runs.react.sourceHead);
 for (const name of ["home", "showcase", "react-compiler", "vue-vapor", "silk-gzip"]) {
-  const image = await readFile(path.join(root, "public/og", name + ".png"));
-  assert.equal(image.subarray(1, 4).toString(), "PNG");
-  assert.equal(image.readUInt32BE(16), 1200);
-  assert.equal(image.readUInt32BE(20), 630);
+  const image = await readFile(path.join(root, "public/og", name + "-v2.jpg"));
+  const metadata = await imageMetadata(image);
+  assert.equal(metadata.format, "jpg");
+  assert.equal(metadata.width, 1200);
+  assert.equal(metadata.height, 630);
+  assert.ok(image.length < 200_000, name + " sharing image stays below 200 KB");
 }
 console.log(
   "Verified " +

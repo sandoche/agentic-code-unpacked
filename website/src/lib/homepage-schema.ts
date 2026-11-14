@@ -43,7 +43,7 @@ export const homepageSchema = z
       title: text,
       items: z.array(z.object({ question: text, answer: text })).min(1),
     }),
-    footer: z.object({ description: text, links: z.array(link) }),
+    footer: z.object({ description: text, note: text, credit: link, links: z.array(link) }),
     ui: z.object({ copy: text, copied: text, copyFallback: text }),
   })
   .superRefine((value, context) => {

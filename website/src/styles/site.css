@@ -195,7 +195,6 @@ code {
 }
 .monster-stage > img {
   width: 100%;
-  mix-blend-mode: multiply;
   display: block;
 }
 .hero-sticker {
@@ -236,6 +235,9 @@ code {
 }
 .monster-count span {
   font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 .monster-stage figcaption {
   font-size: 13px;
@@ -260,30 +262,73 @@ code {
 }
 .hero-run h2 a {
   text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.octicon {
+  flex-shrink: 0;
+  vertical-align: -0.15em;
+  color: var(--code-muted);
 }
 .run-stats {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 20px;
+  gap: 8px;
   font-size: 13px;
 }
-.run-stats > span {
+.stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 8px;
+  border: 1px solid #d1d9e0;
+  border-radius: 6px;
+  background: var(--white);
   white-space: nowrap;
 }
-.run-stats strong {
-  font-family: var(--font-display);
-  font-size: 26px;
-  margin-right: 3px;
-  letter-spacing: -0.03em;
+.stat-chip strong {
+  padding: 0 6px;
+  border-radius: 20px;
+  background: var(--count-bg);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
 }
 .diff-count {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
   font-family: var(--font-code);
   align-self: center;
   font-size: 12px;
+  line-height: 1.6;
+  padding: 5px 8px;
+  border: 1px solid #d1d9e0;
+  border-radius: 6px;
+  background: var(--white);
 }
-.diff-count b {
-  color: var(--green);
+.diff-added {
+  color: var(--diff-added);
+}
+.diff-removed {
+  color: var(--diff-removed);
+}
+.diff-count > span:not(.diff-bar) {
   font-weight: 500;
+}
+.diff-bar {
+  display: inline-flex;
+  gap: 2px;
+}
+.diff-bar i {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: currentColor;
+}
+.diff-empty {
+  color: var(--rule);
 }
 .snapshot-note {
   color: var(--muted);
@@ -454,13 +499,18 @@ code {
   margin-bottom: 32px;
 }
 .case-number span {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-family: var(--font-body);
   font-size: 13px;
   letter-spacing: 0;
   margin-top: 8px;
 }
 .case-project {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 13px;
   font-weight: 500;
   margin-bottom: 12px;
@@ -633,9 +683,6 @@ code {
   font-size: 22px;
   margin-top: 28px;
   max-width: 45ch;
-}
-.showcase-intro img {
-  mix-blend-mode: multiply;
 }
 .editorial-note {
   border-left: 5px solid var(--teal);
@@ -894,10 +941,7 @@ code {
     margin-bottom: 4px;
   }
   .run-stats {
-    gap: 6px 20px;
-  }
-  .run-stats strong {
-    font-size: 24px;
+    gap: 8px;
   }
   .snapshot-note {
     font-size: 12px;
