@@ -1,6 +1,7 @@
 ---
 import type { CollectionEntry } from "astro:content";
 import { getRun, number } from "../lib/examples";
+import Octicon from "./Octicon.astro";
 interface Props {
   entry: CollectionEntry<"caseStudies">;
 }
@@ -11,9 +12,13 @@ const run = getRun(entry.data.run);
 <article class={"case-card case-" + entry.data.run}>
   <div class="case-number">
     {number(run.stats.files)}
-    <span>source files</span>
+    <span>
+      <Octicon name="files" /> source files
+    </span>
   </div>
-  <p class="case-project">{run.name}</p>
+  <p class="case-project">
+    <Octicon name="pr" /> {run.name}
+  </p>
   <h3>
     <a href={"/showcase/" + entry.id + "/"}>{entry.data.title}</a>
   </h3>

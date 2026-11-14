@@ -7,6 +7,10 @@
   --yellow: #f6ce53;
   --teal: #087a73;
   --green: #13634d;
+  --diff-added: #1a7f37;
+  --diff-removed: #d1242f;
+  --code-muted: #59636e;
+  --count-bg: #eff1f3;
   --rule: #c9cabe;
   --walk: #f4e5b5;
   --design: #c7e0d4;

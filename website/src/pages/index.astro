@@ -3,6 +3,7 @@ import { getEntry, getCollection } from "astro:content";
 import SiteLayout from "../layouts/SiteLayout.astro";
 import Example from "../components/Example.astro";
 import RunStats from "../components/RunStats.astro";
+import Octicon from "../components/Octicon.astro";
 import CaseCard from "../components/CaseCard.astro";
 import CommandBlock from "../components/CommandBlock.astro";
 import { getRun, number } from "../lib/examples";
@@ -33,10 +34,12 @@ const cases = (await getCollection("caseStudies")).sort(
       <figure class="monster-stage">
         <a class="monster-count" href={getRun("react").prUrl}>
           <strong>{number(getRun("react").stats.files)}</strong>
-          <span>source files</span>
+          <span>
+            <Octicon name="files" /> source files
+          </span>
         </a>
         <img
-          src="/images/pr-monsters.webp"
+          src="/images/pr-monsters-cutout.webp"
           width="1200"
           height="800"
           alt="Three paper monsters made from sprawling code diffs: an enormous coral beast, a teal creature, and a small yellow zip monster."
@@ -52,7 +55,9 @@ const cases = (await getCollection("caseStudies")).sort(
       {["react", "vue", "silk"].map((id) => (
         <article class="hero-run">
           <h2>
-            <a href={getRun(id).prUrl}>{getRun(id).name}</a>
+            <a href={getRun(id).prUrl}>
+              <Octicon name="pr" /> {getRun(id).name}
+            </a>
           </h2>
           <RunStats run={id} />
         </article>

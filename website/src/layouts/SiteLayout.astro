@@ -68,7 +68,7 @@ const structured = articleDate
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={socialImage} />
     <meta property="og:image:secure_url" content={socialImage} />
-    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:type" content="image/jpeg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content={imageAlt} />
@@ -116,7 +116,10 @@ const structured = articleDate
             <a href={link.href}>{link.label}</a>
           ))}
         </nav>
-        <p class="footer-note">Built for the moment before “looks good to me.”</p>
+        <p class="footer-note">
+          {content.footer.note}{" "}
+          <a href={content.footer.credit.href}>{content.footer.credit.label}</a>.
+        </p>
       </div>
     </footer>
     <script src="../scripts/homepage.ts"></script>

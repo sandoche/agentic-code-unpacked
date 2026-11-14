@@ -14,6 +14,16 @@ export async function checkHomepage(browser,url,{screenshots}={}){
   assert.equal(await page.getByRole('tab').count(),0,'skills must be visible in sequence');
   assert.equal(await page.locator('.case-card').count(),3);
   assert.equal(await page.locator('.hero-run a[href="https://github.com/sandoche/react/pull/1"]').count(),1);
+  assert.equal(await page.locator('.hero-run .stat-chip').count(),6);
+  assert.equal(await page.locator('.hero-run .diff-bar i').count(),15);
+  assert.match(await page.locator('.hero-run .diff-count').first().getAttribute('aria-label'),/additions, .* deletions/);
+  const hero=page.locator('.monster-stage > img');await hero.evaluate(image=>image.decode());
+  const alpha=await hero.evaluate(image=>{
+   const canvas=document.createElement('canvas');canvas.width=image.naturalWidth;canvas.height=image.naturalHeight;
+   const context=canvas.getContext('2d');context.drawImage(image,0,0);
+   return [context.getImageData(0,0,1,1).data[3],context.getImageData(600,400,1,1).data[3]];
+  });
+  assert.equal(alpha[0],0,'hero background is actually transparent');assert.ok(alpha[1]>240,'artwork stays opaque');
   const primary=await page.locator('.hero .primary').boundingBox();assert.ok(primary&&primary.y+primary.height<800);
   if(screenshots)await page.screenshot({path:path.join(screenshots,'homepage-desktop.png')});
   await context.grantPermissions(['clipboard-read','clipboard-write'],{origin:url});
@@ -78,6 +88,14 @@ export async function checkHomepage(browser,url,{screenshots}={}){
   const images=new Set();
   for(const route of routes){
    await page.goto(url+route);
+   assert.equal(await page.locator('.footer-note a').getAttribute('href'),'https://sandoche.com');
+   assert.equal(await page.locator('.footer-note a').textContent(),'By Sandoche');
+   const contrast=await page.locator('.diff-count > .diff-added, .diff-count > .diff-removed').evaluateAll(elements=>elements.map(element=>{
+    const luminance=color=>{const channels=color.match(/\d+/g).slice(0,3).map(Number).map(value=>{const s=value/255;return s<=0.04045?s/12.92:((s+0.055)/1.055)**2.4;});return channels[0]*0.2126+channels[1]*0.7152+channels[2]*0.0722;};
+    const foreground=luminance(getComputedStyle(element).color),background=luminance(getComputedStyle(element.parentElement).backgroundColor);
+    return (Math.max(foreground,background)+0.05)/(Math.min(foreground,background)+0.05);
+   }));
+   assert.ok(contrast.every(ratio=>ratio>=4.5),'diff counts remain readable on colored article headers');
    assert.equal(await page.locator('h1').count(),1);
    assert.equal(await page.locator('link[rel="canonical"]').getAttribute('href'),'https://codeunpacked.san.cx'+route);
    assert.equal(await page.locator('meta[name="twitter:card"]').getAttribute('content'),'summary_large_image');
@@ -85,7 +103,12 @@ export async function checkHomepage(browser,url,{screenshots}={}){
    const imageUrl=await page.locator('meta[property="og:image"]').getAttribute('content');images.add(imageUrl);
    assert.equal(new URL(imageUrl).origin,'https://codeunpacked.san.cx','production sharing images stay on production');
    const response=await page.request.get(url+new URL(imageUrl).pathname);assert.equal(response.status(),200);
-   const png=await response.body();assert.equal(png.readUInt32BE(16),1200);assert.equal(png.readUInt32BE(20),630);
+   assert.equal(response.headers()['content-type'],'image/jpeg');
+   assert.equal(await page.locator('meta[property="og:image:type"]').getAttribute('content'),'image/jpeg');
+   assert.match(new URL(imageUrl).pathname,/-v2\.jpg$/);
+   const bytes=await response.body();assert.ok(bytes.length<200000);
+   const dimensions=await page.evaluate(async src=>{const image=new Image();image.src=src;await image.decode();return[image.naturalWidth,image.naturalHeight];},'data:image/jpeg;base64,'+bytes.toString('base64'));
+   assert.deepEqual(dimensions,[1200,630]);
    assert.equal(await page.locator('meta[property="og:image:alt"]').count(),1);
    const structured=await page.locator('script[type="application/ld+json"]').textContent();
    assert.doesNotThrow(()=>JSON.parse(structured));

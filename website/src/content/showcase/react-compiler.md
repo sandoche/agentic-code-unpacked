@@ -6,7 +6,7 @@ date: 2026-11-13
 seo:
   title: "Finding a way into React Compiler — Code Unpacked"
   description: "A real Code Unpacked run on our React Compiler fork: finding the entry point, following compiler stages, and making a huge import navigable."
-  image: /og/react-compiler.png
+  image: /og/react-compiler-v2.jpg
   imageAlt: "React Compiler: 3,669 source files, 1,900 commits. A Code Unpacked case study."
 takeaway: "The useful first question isn't “which file changed?” It's “which path through these files explains the behavior?”"
 examples:

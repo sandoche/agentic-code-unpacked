@@ -52,13 +52,29 @@ try {
     viewport: { width: 1200, height: 630 },
     deviceScaleFactor: 1,
   });
+  const cutout = await readFile(path.join(root, "art/pr-monsters-transparent.png"));
+  await page.setContent('<img src="data:image/png;base64,' + cutout.toString("base64") + '">');
+  const webp = await page.locator("img").evaluate(async (image) => {
+    await image.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = 1200;
+    canvas.height = 800;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Cannot encode the transparent hero image");
+    context.drawImage(image, 0, 0, 1200, 800);
+    return canvas.toDataURL("image/webp", 0.86).split(",")[1];
+  });
+  await writeFile(
+    path.join(root, "public/images/pr-monsters-cutout.webp"),
+    Buffer.from(webp, "base64"),
+  );
   for (const [id, title, subtitle, color] of cards) {
     const html =
       '<!doctype html><html><head><meta charset="utf-8"><style>@font-face{font-family:Display;src:url("' +
       asset("fonts/familjen-grotesk.woff2") +
       '")}@font-face{font-family:Body;src:url("' +
       asset("fonts/ibm-plex-sans.woff2") +
-      '")}*{box-sizing:border-box}body{margin:0;background:#f7f2e9;color:#19251f;width:1200px;height:630px;overflow:hidden}.brand{position:absolute;left:52px;top:36px;display:flex;align-items:center;gap:12px;font:600 29px Display;letter-spacing:-1px}.brand img{width:48px;height:48px}h1{position:absolute;left:52px;top:138px;margin:0;font:600 100px/.98 Display;letter-spacing:-5px;white-space:pre-line;z-index:1}p{position:absolute;left:56px;bottom:60px;width:580px;margin:0;font:21px/1.5 Body;z-index:1}.monster{position:absolute;width:700px;right:-190px;bottom:28px;mix-blend-mode:multiply}.bar{position:absolute;bottom:0;width:100%;height:16px;background:' +
+      '")}*{box-sizing:border-box}body{margin:0;background:#f7f2e9;color:#19251f;width:1200px;height:630px;overflow:hidden}.brand{position:absolute;left:52px;top:36px;display:flex;align-items:center;gap:12px;font:600 29px Display;letter-spacing:-1px}.brand img{width:48px;height:48px}h1{position:absolute;left:52px;top:138px;margin:0;font:600 100px/.98 Display;letter-spacing:-5px;white-space:pre-line;z-index:1}p{position:absolute;left:56px;bottom:60px;width:580px;margin:0;font:21px/1.5 Body;z-index:1}.monster{position:absolute;width:700px;right:-190px;bottom:28px}.bar{position:absolute;bottom:0;width:100%;height:16px;background:' +
       color +
       '}.line{position:absolute;left:56px;top:113px;right:56px;height:1px;background:#19251f}</style></head><body><div class="brand"><img src="' +
       asset("logo-mark.svg") +
@@ -67,14 +83,15 @@ try {
       "</h1><p>" +
       escape(subtitle) +
       '</p><img class="monster" src="' +
-      asset("images/pr-monsters.webp") +
+      asset("images/pr-monsters-cutout.webp") +
       '"><div class="bar"></div></body></html>';
     const file = path.join(cache, id + ".html");
     await writeFile(file, html);
     await page.goto(pathToFileURL(file).href);
     await page.evaluate(() => document.fonts.ready);
     await page.locator(".monster").evaluate((image) => image.decode());
-    await page.screenshot({ path: path.join(output, id + ".png") });
+    // Fresh URLs avoid reusing a previously cached sharing image. Keep legacy PNGs available.
+    await page.screenshot({ path: path.join(output, id + "-v2.jpg"), type: "jpeg", quality: 82 });
   }
   for (const [name, size] of [
     ["favicon-32.png", 32],
@@ -108,4 +125,6 @@ await writeFile(
       '<text x="76" y="43" font-family="Arial,sans-serif" font-size="33" font-weight="700" letter-spacing="-1.4" fill="#19251f">Code Unpacked</text></svg>',
     ),
 );
-console.log("Generated five 1200×630 social cards, PNG icons and SVG wordmark.");
+console.log(
+  "Generated transparent WebP, five 1200×630 JPEG social cards, PNG icons and SVG wordmark.",
+);

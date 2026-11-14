@@ -2,7 +2,7 @@
 seo:
   title: "Code Unpacked — Your PR is a monster."
   description: "Five open-source skills for understanding big pull requests. Try real walkthroughs, design docs, code maps, quizzes and comics from React, Vue and Silk."
-  image: /og/home.png
+  image: /og/home-v2.jpg
   imageAlt: "Code Unpacked: Your PR is a monster. Three illustrated creatures made from code diffs."
 brand: Code Unpacked
 navigation:
@@ -93,6 +93,8 @@ faq:
       answer: "Comics need an available image-generation tool. Without one, the workflow can retain its storyboard and prompts. Optional video export needs FFmpeg; the interactive HTML does not."
 footer:
   description: "Make the change understandable. Then make the call."
+  note: "Built for the moment before “looks good to me.”"
+  credit: { label: By Sandoche, href: "https://sandoche.com" }
   links:
     - { label: GitHub, href: "https://github.com/sandoche/agentic-code-unpacked" }
     - {
