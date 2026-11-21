@@ -1,6 +1,8 @@
 import path from 'node:path';
 import type * as TS from 'typescript';
-import type { Context, ContextFile, Symbol, Relationship, Unresolved, Analysis } from '../contracts.mjs';
+import type { Context, ContextFile, Symbol, Relationship, Unresolved, Analysis, Evidence } from '../contracts.mjs';
+import type { Declaration } from './structure-syntax.mjs';
+import { extractAdditionalStructure } from './structure.mjs';
 import { decodeAnalysis } from './decode.mjs';
 import { isRecord, present, message } from './values.mjs';
 import { importDependency } from './dependencies.mjs';
@@ -36,10 +38,23 @@ export async function analyzeStructure(original: Context): Promise<Context>{
   validateContext(original);const context=structuredClone(original),symbols: Symbol[]=[],relationships: Relationship[]=[],unresolved: Unresolved[]=[],units: Unit[]=[];
   // Recompute extractor evidence/edges on reruns; preserve authored or verified graph evidence.
   context.evidence=context.evidence.filter(e=>!e.id.startsWith('symbol-'));
-  const addSymbol=(file: ContextFile,name: string,kind: string,startLine: number,endLine: number,extra: Partial<Pick<Symbol,'className' | 'qualifiedName' | 'exportedName'>>={}): Symbol=>{
-    const id=stable('symbol',file.path,name,startLine,kind),evidenceId=id+'-source';
-    const parent=context.evidence.find(e=>e.fileId===file.id&&e.side==='head');
-    context.evidence.push({id:evidenceId,fileId:file.id,side:'head',startLine,endLine,...(parent?.url?{url:parent.url.replace(/#.*$/,'')+`#L${startLine}-L${endLine}`}:{})});
+  const headEvidence = new Map<string, Evidence>();
+  for (const item of context.evidence) {
+    if (item.side === 'head' && !headEvidence.has(item.fileId)) headEvidence.set(item.fileId, item);
+  }
+  const evidenceIds = new Set(context.evidence.map(item => item.id));
+  const addSource = (file: ContextFile, id: string, startLine: number, endLine: number): string => {
+    if (!evidenceIds.has(id)) {
+      const parent = headEvidence.get(file.id);
+      const url = parent?.url && parent.url.replace(/#.*$/, '') + '#L' + startLine + '-L' + endLine;
+      context.evidence.push({ id, fileId: file.id, side: 'head', startLine, endLine, ...(url ? { url } : {}) });
+      evidenceIds.add(id);
+    }
+    return id;
+  };
+  const addSymbol=(file: ContextFile,name: string,kind: string,startLine: number,endLine: number,extra: Partial<Pick<Symbol,'className' | 'qualifiedName' | 'exportedName'>>={},offset?: number): Symbol=>{
+    const id=stable('symbol',file.path,name,startLine,kind,...(offset===undefined?[]:[offset])),evidenceId=id+'-source';
+    addSource(file, evidenceId, startLine, endLine);
     const symbol={id,fileId:file.id,name,kind,startLine,endLine,evidenceIds:[evidenceId],...extra};symbols.push(symbol);return symbol;
   };
   for(const file of context.files){
@@ -89,19 +104,21 @@ export async function analyzeStructure(original: Context): Promise<Context>{
       }catch(error){context.limitations.push(`${file.path}: PHP structure unavailable (${message(error).split('\n')[0]})`);}
     }
   }
-  const edge=(unit: Unit,target: Symbol | ContextFile | undefined,kind: string,fromSymbol: Symbol | undefined,label: string,sourceEvidence?: string[]): boolean=>{
-    if(!target)return false;const fromEvidence=sourceEvidence||fromSymbol?.evidenceIds||context.evidence.filter(e=>e.fileId===unit.file.id&&e.side==='head').slice(0,1).map(e=>e.id),toEvidence='evidenceIds' in target?target.evidenceIds:context.evidence.filter(e=>e.fileId===target.id&&e.side==='head').slice(0,1).map(e=>e.id);
+  const relationshipIds = new Set<string>();
+  const edge=(from: ContextFile,target: Symbol | ContextFile | undefined,kind: string,fromSymbol: Symbol | undefined,label: string,sourceEvidence?: string[]): boolean=>{
+    if(!target)return false;const fromId=headEvidence.get(from.id)?.id,toId=headEvidence.get('fileId' in target?target.fileId:target.id)?.id;
+    const fromEvidence=sourceEvidence||fromSymbol?.evidenceIds||(fromId?[fromId]:[]),toEvidence='evidenceIds' in target?target.evidenceIds:(toId?[toId]:[]);
     if(!fromEvidence.length||!toEvidence.length)return false;
     const fileId='fileId' in target?target.fileId:target.id;
-    const value={id:stable('edge',unit.file.id,fileId,kind,fromSymbol?.id||'',target.id),fromFileId:unit.file.id,toFileId:fileId,kind,label,evidenceIds:[...new Set([...fromEvidence,...toEvidence])],provenance:'source-ast',...(fromSymbol?{fromSymbolId:fromSymbol.id}:{}),...('fileId' in target?{toSymbolId:target.id}:{})};
-    if(!relationships.some(e=>e.id===value.id))relationships.push(value);return true;
+    const value={id:stable('edge',from.id,fileId,kind,fromSymbol?.id||'',target.id),fromFileId:from.id,toFileId:fileId,kind,label,evidenceIds:[...new Set([...fromEvidence,...toEvidence])],provenance:'source-ast',...(fromSymbol?{fromSymbolId:fromSymbol.id}:{}),...('fileId' in target?{toSymbolId:target.id}:{})};
+    if(!relationshipIds.has(value.id)){relationshipIds.add(value.id);relationships.push(value);}return true;
   };
   const importedJs=(unit: JsUnit,local: string,member?: string): Symbol | undefined=>{const imp=unit.imports.find(i=>i.local===local),target=imp&&importTarget(context.files,unit.file.path,imp.spec);if(!target||!imp)return undefined;const name=member||imp.exported;return symbols.find(s=>s.fileId===target.id&&(s.name===name||s.exportedName===name));};
   const jsBinding=(unit: JsUnit,expr: TS.Identifier,member?: string): Symbol | undefined=>{const bound=unit.checker.getSymbolAtLocation(expr),decls=bound?.declarations||[];for(const declaration of decls){const local=unit.declarationNodes.get(declaration);if(local&&!member)return local;if(ts.isImportSpecifier(declaration)||ts.isImportClause(declaration)||ts.isNamespaceImport(declaration))return importedJs(unit,expr.text,member);}return undefined;};
   const importedPhp=(unit: PhpUnit,name: string): Symbol | undefined=>{const first=name.replace(/^\\/,'').split('\\')[0]||'',imp=unit.imports.find(i=>i.local.toLowerCase()===first.toLowerCase());const full=name.startsWith('\\')?name.slice(1):imp?name.replace(first,imp.full):[unit.namespace,name].filter(Boolean).join('\\');return symbols.find(s=>s.kind==='class'&&s.qualifiedName?.toLowerCase()===full.toLowerCase());};
   for(const unit of units){
     if(unit.language==='javascript'){
-      for(const imp of unit.imports){const target=importTarget(context.files,unit.file.path,imp.spec);if(target)edge(unit,target,'imports',undefined,`imports ${imp.spec}`);}
+      for(const imp of unit.imports){const target=importTarget(context.files,unit.file.path,imp.spec);if(target)edge(unit.file,target,'imports',undefined,`imports ${imp.spec}`);}
       const visit=(node: TS.Node): void=>{
         if(ts.isCallExpression(node)||ts.isNewExpression(node)){
           const {symbol,cls}=unit.owners.get(node)||{},expr=node.expression;let target: Symbol | undefined;
@@ -111,21 +128,44 @@ export async function analyzeStructure(original: Context): Promise<Context>{
             else if(ts.isIdentifier(expr.expression))target=jsBinding(unit,expr.expression,expr.name.text);
           }
           const kind=ts.isNewExpression(node)?'constructs':'calls';
-          if(!edge(unit,target,kind,symbol,`${kind} ${expr.getText(unit.ast)}`)&&symbol)unresolved.push({fileId:unit.file.id,fromSymbolId:symbol.id,expression:expr.getText(unit.ast),line:unit.ast.getLineAndCharacterOfPosition(node.getStart(unit.ast)).line+1,reason:'Dynamic, external, or unavailable target',evidenceIds:symbol.evidenceIds});
+          if(!edge(unit.file,target,kind,symbol,`${kind} ${expr.getText(unit.ast)}`)&&symbol)unresolved.push({fileId:unit.file.id,fromSymbolId:symbol.id,expression:expr.getText(unit.ast),line:unit.ast.getLineAndCharacterOfPosition(node.getStart(unit.ast)).line+1,reason:'Dynamic, external, or unavailable target',evidenceIds:symbol.evidenceIds});
         }ts.forEachChild(node,visit);
       };visit(unit.ast);
     }else{
-      for(const imp of unit.imports){const target=importedPhp(unit,imp.local);if(target)edge(unit,target,'imports',undefined,`imports ${imp.full}`);}
+      for(const imp of unit.imports){const target=importedPhp(unit,imp.local);if(target)edge(unit.file,target,'imports',undefined,`imports ${imp.full}`);}
       walk(unit.ast,node=>{
         if(node.kind!=='call'&&node.kind!=='new')return;const {symbol,cls}=unit.owners.get(node)||{};let target: Symbol | undefined,expression='';const what=isRecord(node.what)?node.what:undefined;
         if(node.kind==='new'){expression=phpName(what);target=importedPhp(unit,expression);}
         else if(what?.kind==='name'||what?.kind==='identifier'){expression=phpName(what);target=unit.declarations.get(expression);}
         else if(what&&(what.kind==='propertylookup'||what.kind==='staticlookup')){const method=phpName(what.offset),base=phpName(what.what);expression=`${base}->${method}`;if(base==='this'||base==='self'||base==='static')target=unit.declarations.get(`${cls}.${method}`);else if(what.kind==='staticlookup'){const klass=importedPhp(unit,base);target=klass&&symbols.find(s=>s.fileId===klass.fileId&&s.name===`${klass.name}.${method}`);}}
-        if(!edge(unit,target,node.kind==='new'?'constructs':'calls',symbol,`${node.kind==='new'?'constructs':'calls'} ${expression}`)&&symbol)unresolved.push({fileId:unit.file.id,fromSymbolId:symbol.id,expression:expression||'dynamic PHP call',line:phpLine(node,'start'),reason:'Dynamic, external, or unavailable target',evidenceIds:symbol.evidenceIds});
+        if(!edge(unit.file,target,node.kind==='new'?'constructs':'calls',symbol,`${node.kind==='new'?'constructs':'calls'} ${expression}`)&&symbol)unresolved.push({fileId:unit.file.id,fromSymbolId:symbol.id,expression:expression||'dynamic PHP call',line:phpLine(node,'start'),reason:'Dynamic, external, or unavailable target',evidenceIds:symbol.evidenceIds});
       });
     }
   }
-  context.schemaVersion=2;context.symbols=symbols.sort((a,b)=>a.id.localeCompare(b.id));context.relationships=[...(context.relationships||[]).filter(e=>e.provenance!=='source-ast'),...relationships].sort((a,b)=>a.id.localeCompare(b.id));context.unresolved=unresolved;context.limitations=[...new Set(context.limitations)];context.provenance={...context.provenance,structure:'source-ast: JavaScript/TypeScript/JSX and PHP; dynamic calls unresolved'};
+  context.limitations = context.limitations.filter(item => !item.includes(': structure omitted (Tree-sitter '));
+  const extra = await extractAdditionalStructure(context.files, context.limitations);
+  const extraSymbols = new Map<Declaration, Symbol>();
+  for (const unit of extra.units) {
+    for (const declaration of unit.declarations) {
+      const name = [declaration.container, declaration.name].filter(Boolean).join('.');
+      const qualifiedName = [declaration.namespace, name].filter(Boolean).join('.');
+      const symbol = addSymbol(unit.file, name, declaration.kind, declaration.startLine, declaration.endLine, {
+        qualifiedName, ...(declaration.container ? { className: declaration.container } : {}),
+      }, declaration.offset);
+      extraSymbols.set(declaration, symbol);
+    }
+  }
+  for (const link of extra.links) {
+    const { unit, source, target, expression } = link;
+    const fromSymbol = source.owner && extraSymbols.get(source.owner);
+    const destination = target?.declaration ? extraSymbols.get(target.declaration) : target?.unit.file;
+    const cite = addSource(unit.file, stable('symbol-reference', unit.file.path, source.startLine, source.endLine), source.startLine, source.endLine);
+    if (!edge(unit.file, destination, link.kind, fromSymbol, link.kind + ' ' + expression, [cite])) {
+      unresolved.push({ fileId: unit.file.id, ...(fromSymbol ? { fromSymbolId: fromSymbol.id } : {}),
+        expression, line: source.startLine, reason: 'Ambiguous, dynamic, external, or unavailable target', evidenceIds: [cite] });
+    }
+  }
+  context.schemaVersion=2;context.symbols=symbols.sort((a,b)=>a.id.localeCompare(b.id));context.relationships=[...(context.relationships||[]).filter(e=>e.provenance!=='source-ast'),...relationships].sort((a,b)=>a.id.localeCompare(b.id));context.unresolved=unresolved;context.limitations=[...new Set(context.limitations)];context.provenance={...context.provenance,structure:'source-ast: JavaScript, TypeScript, JSX/TSX, PHP, SQL, Python, Bash, Java, C#, PowerShell, C++, C, Rust, Go, Kotlin, Lua; ambiguous and dynamic targets unresolved'};
   return validateContext(context);
 }
 

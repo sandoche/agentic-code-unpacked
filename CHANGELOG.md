@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Expanded automatic structure extraction to 15 languages, with source-backed links for unambiguous targets in captured files.
+
 - Migrated the shared runtime, presentation renderers, and browser interactions to TypeScript, compiled with the native TypeScript 7 compiler.
 - Added strict type checking and type-aware lint rules that reject `any`, unsafe untyped operations, and suppression directives.
 - Kept installed JavaScript commands and supported artifact schemas compatible, with source-free skill bundles and read-only generated-file checks.
