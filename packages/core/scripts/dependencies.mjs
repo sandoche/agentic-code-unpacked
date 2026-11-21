@@ -15,6 +15,7 @@ function isDependency(name, value) {
         case 'typescript': return isRecord(value.default) && ['createSourceFile', 'createCompilerHost', 'createProgram', 'forEachChild', 'isIdentifier', 'isCallExpression', 'isImportDeclaration'].every(key => typeof value[key] === 'function');
         case 'php-parser': return typeof value.default === 'function';
         case 'shiki': return typeof value.codeToTokens === 'function' && isRecord(value.bundledLanguages);
+        case 'web-tree-sitter': return typeof value.Parser === 'function' && typeof value.Language === 'function';
         case 'playwright': return isRecord(value.chromium) && typeof value.chromium.launch === 'function';
     }
     return false;

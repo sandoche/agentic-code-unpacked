@@ -169,6 +169,9 @@ importers:
 
   .:
     devDependencies:
+      '@types/emscripten':
+        specifier: 1.41.6
+        version: 1.41.6
       '@types/node':
         specifier: 22.19.15
         version: 22.19.15
@@ -202,9 +205,15 @@ importers:
       shiki:
         specifier: 4.6.0
         version: 4.6.0
+      tree-sitter-wasm:
+        specifier: 2.0.4
+        version: 2.0.4
       typescript:
         specifier: 6.0.3
         version: 6.0.3
+      web-tree-sitter:
+        specifier: 0.27.2
+        version: 0.27.2
 
   website:
     dependencies:
@@ -1215,6 +1224,9 @@ packages:
 
   '@types/d3@7.4.3':
     resolution: {integrity: sha512-lZXZ9ckh5R8uiFVt8ogUNf+pIrK4EsWrx2Np75WvF/eTpJ0FMHNhjXk8CKEx/+gpHbNQyJWehbFaTvqmHWB3ww==}
+
+  '@types/emscripten@1.41.6':
+    resolution: {integrity: sha512-uN+9i8bFT5CUcZfyIEYDrSueACEyKGbUs5kC/72DGlZZoinh84sJfVV0i8UOJD1asdzkvLPBRrKs41kZ8MdEXg==}
 
   '@types/estree-jsx@1.0.5':
     resolution: {integrity: sha512-52CcUVNFyfb1A2ALocQw/Dd1BQFNmSdkuC3BkZ6iqhdMfQz7JWOFRuJFloOzjk+6WijU56m9oKXFAXc7o3Towg==}
@@ -2384,6 +2396,9 @@ packages:
   tinyps@0.5.2:
     resolution: {integrity: sha512-sYhvdbpuo2rGE7u/jPUMiZz4H2LCaOodUtRD9ot4DLNFQbr884g9zozoJnxLI+1r4hXqWkmdHUl8Yig2Rllxxw==}
 
+  tree-sitter-wasm@2.0.4:
+    resolution: {integrity: sha512-U83TRmp3oC3DtFA7bMka+o9jtOjZDZpW5/Y5oLzVtSzkcBllQWaYwtQIeTh14aRzZ7feTweBMSFk8NAqwQWmkg==}
+
   trim-lines@3.0.1:
     resolution: {integrity: sha512-kRj8B+YHZCc9kQYdWfJB2/oUl9rA99qbowYYBtr4ui4mZyAQ2JpvVBd/6U2YloATfqBhBTSMhTpgBHtU0Mf3Rg==}
 
@@ -2684,6 +2699,9 @@ packages:
 
   vscode-uri@3.2.0:
     resolution: {integrity: sha512-m2gXo3bn0G1kT9InzMf07fTbqMbGtyckj3bH5ktLO+1Ssv+yiATZ4dhwaQv9UZWxJh6E9IFGnQyjgWVDWVBDrg==}
+
+  web-tree-sitter@0.27.2:
+    resolution: {integrity: sha512-ZRo86GKI4aOSBAqOrPmCtriExI3xIzu1sNw/V6v3b4QGxrEmO19FGwbMNdyhw3MJLAZIw0xAV0oSpqX361eAyQ==}
 
   wrap-ansi@9.0.2:
     resolution: {integrity: sha512-42AtmgqjV+X1VpdOfyTGOYRi0/zsoLqtXQckTmqTeybT+BDIbM/Guxo7x3pE2vtpr1ok6xRqM9OpBe+Jyoqyww==}
@@ -3488,6 +3506,8 @@ snapshots:
       '@types/d3-timer': 3.0.2
       '@types/d3-transition': 3.0.9
       '@types/d3-zoom': 3.0.9
+
+  '@types/emscripten@1.41.6': {}
 
   '@types/estree-jsx@1.0.5':
     dependencies:
@@ -4719,6 +4739,8 @@ snapshots:
 
   tinyps@0.5.2: {}
 
+  tree-sitter-wasm@2.0.4: {}
+
   trim-lines@3.0.1: {}
 
   trough@2.2.0: {}
@@ -4956,6 +4978,8 @@ snapshots:
   vscode-nls@5.2.0: {}
 
   vscode-uri@3.2.0: {}
+
+  web-tree-sitter@0.27.2: {}
 
   wrap-ansi@9.0.2:
     dependencies:
